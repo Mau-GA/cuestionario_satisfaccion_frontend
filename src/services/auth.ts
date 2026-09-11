@@ -2,6 +2,7 @@ import type { Role, Session, User } from '../types/auth'
 import { ROLES } from '../types/auth'
 
 const SESSION_KEY = 'cuestionario.sesion'
+const SESSION_TTL_MS = 60_000
 
 const USERS: User[] = [
   {
@@ -32,6 +33,17 @@ export function isAuthenticated(): boolean {
   return getSession() !== null
 }
 
+export function hasTokenExpired(session: Session): boolean {
+  return Date.now() > session.expiresAt
+}
+
+export function expireSession(): void {
+  const session = getSession()
+  if (!session) return
+  const expired: Session = { ...session, expiresAt: Date.now() - 1 }
+  localStorage.setItem(SESSION_KEY, JSON.stringify(expired))
+}
+
 export function hasRole(...roles: Role[]): boolean {
   const session = getSession()
   return session !== null && roles.includes(session.user.role)
@@ -53,6 +65,7 @@ export function login(email: string, password: string): Session {
 
   const session: Session = {
     token: `token-${user.id}-${Date.now()}`,
+    expiresAt: Date.now() + SESSION_TTL_MS,
     user,
   }
   localStorage.setItem(SESSION_KEY, JSON.stringify(session))
