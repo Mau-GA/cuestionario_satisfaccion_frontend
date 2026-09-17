@@ -16,7 +16,7 @@ function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
-  if (roles && !roles.includes(session.user.role)) {
+  if (roles && (session.user.rol === null || !roles.includes(session.user.rol))) {
     return <Navigate to="/login" replace />
   }
 

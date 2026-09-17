@@ -1,0 +1,87 @@
+.inst-header {
+  background: var(--azul-unam);
+  border-bottom: 5px solid var(--oro-unam);
+}
+
+.inst-header-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+}
+
+.inst-header-left {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.inst-header-right {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+}
+
+.inst-header-logo {
+  height: 50px;
+  width: auto;
+  display: block;
+}
+
+.inst-header-titles {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.inst-header-titles strong {
+  font-size: 17px;
+  letter-spacing: 0.2px;
+}
+
+.inst-header-titles small {
+  font-size: 14px;
+  opacity: 0.85;
+  letter-spacing: 0.3px;
+}
+
+@media (max-width: 720px) {
+  .inst-header-inner {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'left right'
+      'titles titles';
+    gap: 8px 16px;
+  }
+
+  .inst-header-left {
+    grid-area: left;
+  }
+
+  .inst-header-right {
+    grid-area: right;
+  }
+
+  .inst-header-titles {
+    grid-area: titles;
+  }
+
+  .inst-header-logo {
+    height: 39px;
+  }
+
+  .inst-header-titles strong {
+    font-size: 15px;
+  }
+
+  .inst-header-titles small {
+    font-size: 12.5px;
+  }
+}

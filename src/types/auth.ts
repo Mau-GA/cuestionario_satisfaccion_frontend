@@ -1,19 +1,22 @@
-export type Role = 'admin' | 'survey_admin'
+export type Role = 'administrador' | 'administrador de encuestas'
 
 export const ROLES: Record<string, Role> = {
-  ADMIN: 'admin',
-  SURVEY_ADMIN: 'survey_admin',
+  ADMIN: 'administrador',
+  SURVEY_ADMIN: 'administrador de encuestas',
 }
 
 export interface User {
-  id: string
-  name: string
-  email: string
-  role: Role
+  idusuario: number
+  correoElectronico: string
+  activo: boolean
+  idUnidadResponsable: number | null
+  idRol: number | null
+  rol: Role | null
 }
 
 export interface Session {
   token: string
+  refreshToken: string
   expiresAt: number
   user: User
 }

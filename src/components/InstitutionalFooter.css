@@ -1,0 +1,33 @@
+.inst-footer {
+  margin-top: auto;
+  background: var(--azul-unam);
+  color: #ffffff;
+}
+
+.inst-footer-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 28px 24px;
+  text-align: center;
+}
+
+.inst-footer-site {
+  color: var(--oro-unam);
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 20.5px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.inst-footer-site:hover {
+  text-decoration: underline;
+}
+
+.inst-footer-legal {
+  margin-top: 18px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  letter-spacing: 0.25px;
+  color: rgba(255, 255, 255, 0.92);
+}

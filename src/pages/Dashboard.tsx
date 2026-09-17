@@ -1,10 +1,13 @@
 import type { FormEvent } from 'react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import InstitutionalHeader from '../components/InstitutionalHeader'
+import InstitutionalFooter from '../components/InstitutionalFooter'
 import { expireSession, getSession, logout } from '../services/auth'
-import { ApiError } from '../services/http'
 import { ROLES } from '../types/auth'
+import { ApiError } from '../types/api'
 import { listSurveys, type Survey } from '../services/surveys'
+import './page.css'
 
 function Dashboard() {
   const navigate = useNavigate()
@@ -55,42 +58,64 @@ function Dashboard() {
   }
 
   return (
-    <main>
-      <h1>Panel de encuestas</h1>
-      <p>
-        Bienvenido, {session?.user.name} ({session?.user.role})
-      </p>
-      {session?.user.role === ROLES.ADMIN && (
-        <p>
-          <Link to="/admin">Ir a administración</Link>
-        </p>
-      )}
+    <>
+      <InstitutionalHeader />
+      <main className="page">
+        <section className="page-panel">
+          <h1>Panel de encuestas</h1>
+          <p>
+            Bienvenido, {session?.user.correoElectronico} ({session?.user.rol})
+          </p>
 
-      {error && <p role="alert">{error}</p>}
-      {loading ? (
-        <p>Cargando…</p>
-      ) : surveys.length > 0 ? (
-        <ul>
-          {surveys.map((s) => (
-            <li key={s.id}>
-              {s.title} — {s.responses} respuestas
-            </li>
-          ))}
-        </ul>
-      ) : (
-        !error && <p>No hay encuestas.</p>
-      )}
+          {session?.user.rol === ROLES.ADMIN && (
+            <p style={{ marginTop: '8px' }}>
+              <Link to="/admin">Ir a administración</Link>
+            </p>
+          )}
 
-      <button type="button" onClick={loadSurveys}>
-        Recargar
-      </button>
-      <button type="button" onClick={handleForceExpire}>
-        Expirar token (demo)
-      </button>
-      <button type="button" onClick={handleLogout}>
-        Cerrar sesión
-      </button>
-    </main>
+          {error && (
+            <p className="page-alert" role="alert">
+              {error}
+            </p>
+          )}
+
+          {loading ? (
+            <p>Cargando…</p>
+          ) : surveys.length > 0 ? (
+            <ul className="page-list">
+              {surveys.map((s) => (
+                <li key={s.id} className="page-list-item">
+                  <strong>{s.title}</strong> — {s.responses} respuestas
+                </li>
+              ))}
+            </ul>
+          ) : (
+            !error && <p>No hay encuestas.</p>
+          )}
+
+          <div className="page-toolbar">
+            <button type="button" className="page-button" onClick={loadSurveys}>
+              Recargar
+            </button>
+            <button
+              type="button"
+              className="page-button page-button--ghost"
+              onClick={handleForceExpire}
+            >
+              Expirar token (demo)
+            </button>
+            <button
+              type="button"
+              className="page-button page-button--ghost"
+              onClick={handleLogout}
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </section>
+      </main>
+      <InstitutionalFooter />
+    </>
   )
 }
 

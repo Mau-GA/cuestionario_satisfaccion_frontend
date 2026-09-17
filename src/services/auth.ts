@@ -1,23 +1,50 @@
 import type { Role, Session, User } from '../types/auth'
-import { ROLES } from '../types/auth'
+import { ApiError, serverMessage } from '../types/api'
+import { API_BASE_URL } from './config'
 
 const SESSION_KEY = 'cuestionario.sesion'
-const SESSION_TTL_MS = 60_000
 
-const USERS: User[] = [
-  {
-    id: '1',
-    name: 'Administrador',
-    email: 'admin@example.com',
-    role: ROLES.ADMIN,
-  },
-  {
-    id: '2',
-    name: 'Administrador de encuestas',
-    email: 'encuestas@example.com',
-    role: ROLES.SURVEY_ADMIN,
-  },
-]
+interface LoginResponse {
+  accessToken: string
+  refreshToken: string
+  usuario: User
+}
+
+export async function login(
+  correoElectronico: string,
+  contraseña: string,
+): Promise<Session> {
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ correoElectronico, contraseña }),
+    })
+  } catch {
+    throw new ApiError('No se pudo conectar con el servidor', 0)
+  }
+
+  const body = await readBody(response)
+
+  if (!response.ok) {
+    throw new ApiError(serverMessage(body), response.status)
+  }
+
+  const data = body as unknown as LoginResponse
+  const session: Session = {
+    token: data.accessToken,
+    refreshToken: data.refreshToken,
+    expiresAt: tokenExpiry(data.accessToken),
+    user: data.usuario,
+  }
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  return session
+}
+
+export function logout(): void {
+  localStorage.removeItem(SESSION_KEY)
+}
 
 export function getSession(): Session | null {
   const raw = localStorage.getItem(SESSION_KEY)
@@ -33,6 +60,11 @@ export function isAuthenticated(): boolean {
   return getSession() !== null
 }
 
+export function hasRole(...roles: Role[]): boolean {
+  const session = getSession()
+  return session !== null && session.user.rol !== null && roles.includes(session.user.rol)
+}
+
 export function hasTokenExpired(session: Session): boolean {
   return Date.now() > session.expiresAt
 }
@@ -40,38 +72,30 @@ export function hasTokenExpired(session: Session): boolean {
 export function expireSession(): void {
   const session = getSession()
   if (!session) return
-  const expired: Session = { ...session, expiresAt: Date.now() - 1 }
-  localStorage.setItem(SESSION_KEY, JSON.stringify(expired))
-}
-
-export function hasRole(...roles: Role[]): boolean {
-  const session = getSession()
-  return session !== null && roles.includes(session.user.role)
-}
-
-export function login(email: string, password: string): Session {
-  const user = USERS.find(
-    (u) => u.email.toLowerCase() === email.toLowerCase(),
+  localStorage.setItem(
+    SESSION_KEY,
+    JSON.stringify({ ...session, expiresAt: Date.now() - 1 }),
   )
-
-  if (!user) {
-    throw new Error('Credenciales incorrectas')
-  }
-
-  const normalizedPassword = `${user.role}-1234`
-  if (password !== normalizedPassword) {
-    throw new Error('Credenciales incorrectas')
-  }
-
-  const session: Session = {
-    token: `token-${user.id}-${Date.now()}`,
-    expiresAt: Date.now() + SESSION_TTL_MS,
-    user,
-  }
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
-  return session
 }
 
-export function logout(): void {
-  localStorage.removeItem(SESSION_KEY)
+function tokenExpiry(token: string): number {
+  try {
+    const [, payload] = token.split('.')
+    const json = JSON.parse(
+      atob(payload.replace(/-/g, '+').replace(/_/g, '/')),
+    )
+    return typeof json.exp === 'number' ? json.exp * 1000 : Date.now() + 3_600_000
+  } catch {
+    return Date.now() + 3_600_000
+  }
+}
+
+async function readBody(response: Response): Promise<unknown> {
+  const text = await response.text()
+  if (!text) return null
+  try {
+    return JSON.parse(text)
+  } catch {
+    return text
+  }
 }
