@@ -7,6 +7,8 @@ import Inicio from './pages/Inicio'
 import Usuarios from './pages/Usuarios'
 import Unidades from './pages/Unidades'
 import Catalogos from './pages/Catalogos'
+import Encuestas from './pages/Encuestas'
+import EncuestaDetalle from './pages/EncuestaDetalle'
 import SinPermiso from './pages/SinPermiso'
 
 export default function App() {
@@ -46,6 +48,23 @@ export default function App() {
             element={
               <ProtectedRoute roles={[ROL.ADMINISTRADOR, ROL.ADMINISTRADOR_ENCUESTAS]}>
                 <Catalogos />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/encuestas"
+            element={
+              <ProtectedRoute roles={[ROL.ADMINISTRADOR_ENCUESTAS]}>
+                <Encuestas />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/encuestas/:id"
+            element={
+              <ProtectedRoute roles={[ROL.ADMINISTRADOR_ENCUESTAS]}>
+                <EncuestaDetalle />
               </ProtectedRoute>
             }
           />

@@ -1,5 +1,7 @@
 import { api } from './http'
 import type {
+  EncuestaDetalle,
+  EncuestaResumen,
   Opcion,
   Pregunta,
   TipoEncuesta,
@@ -62,3 +64,37 @@ export const actualizarTipoEncuesta = (id: number, body: Record<string, unknown>
   api<TipoEncuesta>(`/catalogos/tipos-encuesta/${id}`, { method: 'PATCH', body })
 export const actualizarTipoRespuesta = (id: number, body: Record<string, unknown>) =>
   api<TipoRespuesta>(`/catalogos/tipos-respuesta/${id}`, { method: 'PATCH', body })
+
+// ---------- Encuestas ----------
+
+export const listarEncuestas = () => api<EncuestaResumen[]>('/encuestas')
+
+export const detalleEncuesta = (id: number) => api<EncuestaDetalle>(`/encuestas/${id}`)
+
+export const crearEncuesta = (body: {
+  titulo: string
+  idTipoEncuesta: number
+  fechaInicioVigencia?: string
+  fechaFinVigencia?: string
+  visibleEnInicio?: boolean
+}) => api<EncuestaResumen>('/encuestas', { method: 'POST', body })
+
+export const actualizarEncuesta = (id: number, body: Record<string, unknown>) =>
+  api<EncuestaResumen>(`/encuestas/${id}`, { method: 'PATCH', body })
+
+export const agregarPreguntaAEncuesta = (
+  id: number,
+  body: { idPregunta: number; idTipoRespuesta: number; idOpciones?: number[] },
+) => api<{ idEncuestaPregunta: number; orden: number }>(`/encuestas/${id}/preguntas`, {
+  method: 'POST',
+  body,
+})
+
+export const quitarPreguntaDeEncuesta = (id: number, idEncuestaPregunta: number) =>
+  api<{ quitada: number }>(`/encuestas/${id}/preguntas/${idEncuestaPregunta}`, { method: 'DELETE' })
+
+export const reordenarPreguntas = (id: number, orden: number[]) =>
+  api<EncuestaDetalle>(`/encuestas/${id}/orden`, { method: 'PATCH', body: { orden } })
+
+export const duplicarEncuesta = (id: number) =>
+  api<{ idEncuesta: number; titulo: string }>(`/encuestas/${id}/duplicar`, { method: 'POST' })

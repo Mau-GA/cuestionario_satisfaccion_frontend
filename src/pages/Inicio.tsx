@@ -38,7 +38,8 @@ const accesos: Acceso[] = [
   },
   {
     titulo: 'Mis encuestas',
-    texto: 'Armar, publicar y consultar resultados.',
+    texto: 'Armar encuestas, programar su vigencia y duplicarlas.',
+    a: '/encuestas',
     roles: [ROL.ADMINISTRADOR_ENCUESTAS],
   },
 ]

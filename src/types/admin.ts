@@ -41,3 +41,37 @@ export interface Opcion {
   peso: string | null
   activo: boolean
 }
+
+export type EstadoEncuesta = 'borrador' | 'programada' | 'abierta' | 'cerrada'
+
+export interface EncuestaResumen {
+  idEncuesta: number
+  titulo: string
+  idTipoEncuesta: number
+  tipoEncuesta: string | null
+  idUnidadResponsable: number
+  fechaInicioVigencia: string | null
+  fechaFinVigencia: string | null
+  idEvento: number | null
+  idEncuestaPrincipal: number | null
+  visibleEnInicio: boolean
+  tokenPublico: string | null
+  activo: boolean
+  estado: EstadoEncuesta
+  /** Falso en cuanto la encuesta abre: a partir de ahí no se toca. */
+  editable: boolean
+}
+
+export interface PreguntaDeEncuesta {
+  idEncuestaPregunta: number
+  idPregunta: number
+  pregunta: string
+  idTipoRespuesta: number
+  tipoRespuesta: string
+  orden: number
+  opciones: { idOpcion: number; opcion: string; peso: string | null }[]
+}
+
+export interface EncuestaDetalle extends EncuestaResumen {
+  preguntas: PreguntaDeEncuesta[]
+}
