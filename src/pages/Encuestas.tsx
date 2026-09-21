@@ -108,6 +108,12 @@ export default function Encuestas() {
                     <EstadoPill estado={e.estado} />
                   </td>
                   <td className="px-2 py-2.5 text-right whitespace-nowrap">
+                    <Link
+                      to={`/encuestas/${e.idEncuesta}/resultados`}
+                      className="mr-2 text-sm font-medium text-unam-azul hover:underline"
+                    >
+                      Resultados
+                    </Link>
                     <Boton variante="secundario" onClick={() => void duplicar(e.idEncuesta)}>
                       Duplicar
                     </Boton>

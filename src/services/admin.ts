@@ -1,9 +1,11 @@
 import { api } from './http'
 import type {
+  Comentarios,
   EncuestaDetalle,
   EncuestaResumen,
   Opcion,
   Pregunta,
+  Resultados,
   TipoEncuesta,
   TipoRespuesta,
   Unidad,
@@ -98,3 +100,8 @@ export const reordenarPreguntas = (id: number, orden: number[]) =>
 
 export const duplicarEncuesta = (id: number) =>
   api<{ idEncuesta: number; titulo: string }>(`/encuestas/${id}/duplicar`, { method: 'POST' })
+
+export const resultadosDeEncuesta = (id: number) => api<Resultados>(`/encuestas/${id}/resultados`)
+
+export const comentariosDeEncuesta = (id: number, pagina = 1, limite = 20) =>
+  api<Comentarios>(`/encuestas/${id}/comentarios?pagina=${pagina}&limite=${limite}`)

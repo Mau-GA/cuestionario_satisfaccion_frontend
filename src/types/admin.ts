@@ -110,3 +110,50 @@ export interface EncuestaEnInicio {
 
 /** Lo que el usuario lleva contestado: por pregunta, una opción o un texto. */
 export type Respuesta = { idOpcion: number } | { respuesta: string }
+
+// ---------- Resultados ----------
+
+export interface DistribucionOpcion {
+  idOpcion: number
+  opcion: string
+  peso: string | null
+  veces: number
+  porcentaje: number
+}
+
+export interface ResultadoPregunta {
+  idEncuestaPregunta: number
+  pregunta: string
+  tipoRespuesta: string
+  orden: number
+  respuestas: number
+  esTextoLibre: boolean
+  distribucion: DistribucionOpcion[]
+  promedio: number | null
+  /** Porcentaje 0–100, normalizado contra la escala de esa pregunta. */
+  satisfaccion: number | null
+}
+
+export interface Resultados {
+  encuesta: {
+    idEncuesta: number
+    titulo: string
+    fechaInicioVigencia: string | null
+    fechaFinVigencia: string | null
+  }
+  participacion: {
+    envios: number
+    completos: number
+    incompletos: number
+    totalPreguntas: number
+  }
+  preguntas: ResultadoPregunta[]
+}
+
+export interface Comentarios {
+  data: { pregunta: string; respuesta: string | null; fecha: string }[]
+  total: number
+  pagina: number
+  limite: number
+  totalPaginas: number
+}

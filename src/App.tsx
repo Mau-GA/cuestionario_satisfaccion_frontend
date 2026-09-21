@@ -9,6 +9,7 @@ import Unidades from './pages/Unidades'
 import Catalogos from './pages/Catalogos'
 import Encuestas from './pages/Encuestas'
 import EncuestaDetalle from './pages/EncuestaDetalle'
+import Resultados from './pages/Resultados'
 import Responder from './pages/Responder'
 import InicioPublico from './pages/InicioPublico'
 import SinPermiso from './pages/SinPermiso'
@@ -71,6 +72,14 @@ export default function App() {
             element={
               <ProtectedRoute roles={[ROL.ADMINISTRADOR_ENCUESTAS]}>
                 <EncuestaDetalle />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/encuestas/:id/resultados"
+            element={
+              <ProtectedRoute roles={[ROL.ADMINISTRADOR_ENCUESTAS]}>
+                <Resultados />
               </ProtectedRoute>
             }
           />

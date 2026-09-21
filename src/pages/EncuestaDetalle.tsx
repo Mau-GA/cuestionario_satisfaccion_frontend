@@ -112,9 +112,17 @@ export default function EncuestaDetalle() {
 
   return (
     <Pagina>
-      <Link to="/encuestas" className="text-sm text-unam-azul hover:underline">
-        ← Mis encuestas
-      </Link>
+      <div className="flex items-center justify-between gap-4">
+        <Link to="/encuestas" className="text-sm text-unam-azul hover:underline">
+          ← Mis encuestas
+        </Link>
+        <Link
+          to={`/encuestas/${idEncuesta}/resultados`}
+          className="text-sm font-medium text-unam-azul hover:underline"
+        >
+          Ver resultados →
+        </Link>
+      </div>
       <div className="mt-2 mb-6 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold text-unam-azul">{d.titulo}</h1>
         <EstadoPill estado={d.estado} />
