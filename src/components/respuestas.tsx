@@ -82,7 +82,10 @@ export function Barra({ opciones, valor, onElegir }: Props) {
             type="button"
             onClick={() => onElegir(o.idOpcion)}
             aria-pressed={valor === o.idOpcion}
-            className={`flex-1 border-r border-slate-200 px-2 py-2.5 text-xs transition last:border-r-0 ${
+            // `min-w-0` deja que los segmentos se encojan por debajo del ancho de
+            // su texto: sin eso, una escala con etiquetas largas empuja la barra
+            // fuera de su contenedor. El texto se acomoda en varias líneas.
+            className={`min-w-0 flex-1 border-r border-slate-200 px-2 py-2.5 text-xs transition last:border-r-0 ${
               i <= elegida && elegida >= 0
                 ? 'bg-unam-azul text-white'
                 : 'bg-white text-slate-600 hover:bg-slate-50'

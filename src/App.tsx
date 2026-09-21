@@ -2,88 +2,91 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { SessionProvider } from './context/SessionProvider'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ROL } from './types/auth'
+import InicioPublico from './pages/InicioPublico'
+import Responder from './pages/Responder'
 import Login from './pages/Login'
-import Inicio from './pages/Inicio'
+import Usuario from './pages/Usuario'
+import EncuestaDetalle from './pages/EncuestaDetalle'
+import Resultados from './pages/Resultados'
 import Usuarios from './pages/Usuarios'
 import Unidades from './pages/Unidades'
 import Catalogos from './pages/Catalogos'
-import Encuestas from './pages/Encuestas'
-import EncuestaDetalle from './pages/EncuestaDetalle'
-import Resultados from './pages/Resultados'
-import Responder from './pages/Responder'
-import InicioPublico from './pages/InicioPublico'
+import Solicitudes from './pages/Solicitudes'
 import SinPermiso from './pages/SinPermiso'
+
+const AMBOS = [ROL.ADMINISTRADOR, ROL.ADMINISTRADOR_ENCUESTAS]
+const SOLO_ADMIN = [ROL.ADMINISTRADOR]
 
 export default function App() {
   return (
     <SessionProvider>
       <BrowserRouter>
         <Routes>
-          {/* Abiertas: quien responde no necesita cuenta. */}
-          <Route path="/inicio" element={<InicioPublico />} />
+          {/* Públicas: quien responde no necesita cuenta. */}
+          <Route path="/" element={<InicioPublico />} />
           <Route path="/responder/:token" element={<Responder />} />
-
           <Route path="/login" element={<Login />} />
-          <Route path="/sin-permiso" element={<SinPermiso />} />
 
+          {/* Detrás de la sesión. */}
           <Route
-            path="/"
+            path="/usuario"
             element={
-              <ProtectedRoute>
-                <Inicio />
+              <ProtectedRoute roles={AMBOS}>
+                <Usuario />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/usuarios"
+            path="/usuario/encuestas/:id"
             element={
-              <ProtectedRoute roles={[ROL.ADMINISTRADOR]}>
-                <Usuarios />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/unidades"
-            element={
-              <ProtectedRoute roles={[ROL.ADMINISTRADOR]}>
-                <Unidades />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/catalogos"
-            element={
-              <ProtectedRoute roles={[ROL.ADMINISTRADOR, ROL.ADMINISTRADOR_ENCUESTAS]}>
-                <Catalogos />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/encuestas"
-            element={
-              <ProtectedRoute roles={[ROL.ADMINISTRADOR_ENCUESTAS]}>
-                <Encuestas />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/encuestas/:id"
-            element={
-              <ProtectedRoute roles={[ROL.ADMINISTRADOR_ENCUESTAS]}>
+              <ProtectedRoute roles={AMBOS}>
                 <EncuestaDetalle />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/encuestas/:id/resultados"
+            path="/usuario/encuestas/:id/resultados"
             element={
-              <ProtectedRoute roles={[ROL.ADMINISTRADOR_ENCUESTAS]}>
+              <ProtectedRoute roles={AMBOS}>
                 <Resultados />
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/usuario/usuarios"
+            element={
+              <ProtectedRoute roles={SOLO_ADMIN}>
+                <Usuarios />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/usuario/unidades"
+            element={
+              <ProtectedRoute roles={SOLO_ADMIN}>
+                <Unidades />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/usuario/catalogos"
+            element={
+              <ProtectedRoute roles={SOLO_ADMIN}>
+                <Catalogos />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/usuario/solicitudes"
+            element={
+              <ProtectedRoute roles={SOLO_ADMIN}>
+                <Solicitudes />
+              </ProtectedRoute>
+            }
+          />
 
+          <Route path="/sin-permiso" element={<SinPermiso />} />
+          {/* Lo desconocido va a la pantalla pública, no al login. */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

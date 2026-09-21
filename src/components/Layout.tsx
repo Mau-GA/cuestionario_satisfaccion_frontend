@@ -1,19 +1,16 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { LogoFESAcatlan, LogoUNAM } from './Logos'
 
 export function Encabezado({ children }: { children?: ReactNode }) {
   return (
     <header className="bg-unam-azul text-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-        <Link to="/" className="leading-tight">
-          <p className="text-xs font-medium tracking-[0.2em] text-unam-oro uppercase">UNAM</p>
-          <p className="text-sm font-semibold">FES Acatlán</p>
+        <Link to="/" aria-label="Inicio">
+          <LogoUNAM />
         </Link>
-        <div className="hidden text-right sm:block">
-          <p className="text-sm font-semibold">Encuestas de Satisfacción</p>
-          <p className="text-xs text-white/70">Sistema institucional</p>
-        </div>
         {children}
+        <LogoFESAcatlan />
       </div>
     </header>
   )

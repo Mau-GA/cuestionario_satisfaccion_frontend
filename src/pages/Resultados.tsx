@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Pagina } from '../components/Layout'
+import { AreaUsuario } from '../components/AreaUsuario'
 import { Aviso, Boton, Tarjeta } from '../components/ui'
 import { Distribucion } from '../components/Distribucion'
 import { useCargar } from '../hooks'
@@ -41,16 +41,16 @@ export default function Resultados() {
 
   if (datos.cargando) {
     return (
-      <Pagina>
+      <AreaUsuario>
         <p className="text-sm text-slate-500">Cargando…</p>
-      </Pagina>
+      </AreaUsuario>
     )
   }
   if (!datos.datos) {
     return (
-      <Pagina>
+      <AreaUsuario>
         <Aviso tipo="error">{datos.error ?? 'No se encontró la encuesta'}</Aviso>
-      </Pagina>
+      </AreaUsuario>
     )
   }
 
@@ -64,8 +64,8 @@ export default function Resultados() {
     : null
 
   return (
-    <Pagina>
-      <Link to={`/encuestas/${idEncuesta}`} className="text-sm text-unam-azul hover:underline">
+    <AreaUsuario>
+      <Link to={`/usuario/encuestas/${idEncuesta}`} className="text-sm text-unam-azul hover:underline">
         ← Volver a la encuesta
       </Link>
       <h1 className="mt-2 text-2xl font-semibold text-unam-azul">{encuesta.titulo}</h1>
@@ -161,7 +161,7 @@ export default function Resultados() {
           )}
         </Tarjeta>
       </div>
-    </Pagina>
+    </AreaUsuario>
   )
 }
 

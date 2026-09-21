@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Pagina } from '../components/Layout'
+import { AreaUsuario } from '../components/AreaUsuario'
 import { Aviso, Boton, Campo, Insignia, Tabla, Tarjeta } from '../components/ui'
 import { useCargar } from '../hooks'
 import { useSession } from '../context/useSession'
@@ -54,7 +54,7 @@ export default function Catalogos() {
   }
 
   return (
-    <Pagina>
+    <AreaUsuario>
       <h1 className="text-2xl font-semibold text-unam-azul">Catálogos</h1>
       <p className="mt-1 mb-6 text-sm text-slate-500">
         Las preguntas se comparten entre encuestas. Corregir una que ya se usó guarda una versión
@@ -274,6 +274,6 @@ export default function Catalogos() {
           </Tabla>
         </Tarjeta>
       </div>
-    </Pagina>
+    </AreaUsuario>
   )
 }

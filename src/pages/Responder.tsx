@@ -28,7 +28,7 @@ function Mensaje({ titulo, texto }: { titulo: string; texto: string }) {
       <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
         <h1 className="text-xl font-semibold text-unam-azul">{titulo}</h1>
         <p className="mt-2 text-sm text-slate-600">{texto}</p>
-        <Link to="/inicio" className="mt-6 inline-block text-sm text-unam-azul hover:underline">
+        <Link to="/" className="mt-6 inline-block text-sm text-unam-azul hover:underline">
           Ver otras encuestas abiertas
         </Link>
       </div>

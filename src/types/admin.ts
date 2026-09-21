@@ -50,6 +50,7 @@ export interface EncuestaResumen {
   idTipoEncuesta: number
   tipoEncuesta: string | null
   idUnidadResponsable: number
+  unidadResponsable: string | null
   fechaInicioVigencia: string | null
   fechaFinVigencia: string | null
   idEvento: number | null

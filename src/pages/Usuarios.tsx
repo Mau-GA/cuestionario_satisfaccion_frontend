@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Pagina } from '../components/Layout'
+import { AreaUsuario } from '../components/AreaUsuario'
 import { Aviso, Boton, Campo, Insignia, Selector, Tabla, Tarjeta } from '../components/ui'
 import { useCargar } from '../hooks'
 import { ApiError } from '../services/http'
@@ -72,7 +72,7 @@ export default function Usuarios() {
   }
 
   return (
-    <Pagina>
+    <AreaUsuario>
       <h1 className="mb-6 text-2xl font-semibold text-unam-azul">Usuarios</h1>
 
       <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
@@ -146,6 +146,6 @@ export default function Usuarios() {
           )}
         </Tarjeta>
       </div>
-    </Pagina>
+    </AreaUsuario>
   )
 }

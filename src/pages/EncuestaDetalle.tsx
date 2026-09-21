@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Pagina } from '../components/Layout'
-import { Aviso, Boton, Campo, Selector, Tarjeta } from '../components/ui'
+import { AreaUsuario } from '../components/AreaUsuario'
+import { Aviso, Boton, Campo, Tarjeta } from '../components/ui'
+import { AgregarPregunta } from '../components/AgregarPregunta'
 import { EstadoPill } from '../components/EstadoEncuesta'
 import { aInputLocal, deInputLocal, fecha } from '../utils/fechas'
 import { useCargar } from '../hooks'
 import { ApiError } from '../services/http'
 import {
   actualizarEncuesta,
-  agregarPreguntaAEncuesta,
   detalleEncuesta,
   listarOpciones,
   listarPreguntas,
@@ -18,8 +18,6 @@ import {
   reordenarPreguntas,
 } from '../services/admin'
 import type { EncuestaDetalle as Detalle, Opcion, Pregunta, TipoRespuesta } from '../types/admin'
-
-const TEXTO_LIBRE = 'texto libre'
 
 export default function EncuestaDetalle() {
   const { id } = useParams<{ id: string }>()
@@ -31,17 +29,9 @@ export default function EncuestaDetalle() {
   const opciones = useCargar<Opcion[]>(() => listarOpciones(true))
 
   const [error, setError] = useState<string | null>(null)
-  const [idPregunta, setIdPregunta] = useState('')
-  const [idTipoRespuesta, setIdTipoRespuesta] = useState('')
-  const [seleccionadas, setSeleccionadas] = useState<number[]>([])
 
   const d = encuesta.datos
   const editable = d?.editable ?? false
-
-  const tipoElegido = (tiposRespuesta.datos ?? []).find(
-    (t) => String(t.idTipoRespuesta) === idTipoRespuesta,
-  )
-  const esTextoLibre = tipoElegido?.tipoRespuesta.trim().toLowerCase() === TEXTO_LIBRE
 
   // Las que ya están en la encuesta no se pueden volver a agregar.
   const yaUsadas = new Set((d?.preguntas ?? []).map((p) => p.idPregunta))
@@ -70,19 +60,6 @@ export default function EncuestaDetalle() {
     )
   }
 
-  async function agregar(evento: FormEvent) {
-    evento.preventDefault()
-    await intentar(async () => {
-      await agregarPreguntaAEncuesta(idEncuesta, {
-        idPregunta: Number(idPregunta),
-        idTipoRespuesta: Number(idTipoRespuesta),
-        idOpciones: esTextoLibre ? undefined : seleccionadas,
-      })
-      setIdPregunta('')
-      setSeleccionadas([])
-    })
-  }
-
   async function mover(indice: number, direccion: -1 | 1) {
     if (!d) return
     const ids = d.preguntas.map((p) => p.idEncuestaPregunta)
@@ -94,30 +71,30 @@ export default function EncuestaDetalle() {
 
   if (encuesta.cargando) {
     return (
-      <Pagina>
+      <AreaUsuario>
         <p className="text-sm text-slate-500">Cargando…</p>
-      </Pagina>
+      </AreaUsuario>
     )
   }
   if (!d) {
     return (
-      <Pagina>
+      <AreaUsuario>
         <Aviso tipo="error">{encuesta.error ?? 'Encuesta no encontrada'}</Aviso>
-        <Link to="/encuestas" className="mt-4 inline-block text-sm text-unam-azul hover:underline">
+        <Link to="/usuario" className="mt-4 inline-block text-sm text-unam-azul hover:underline">
           ← Volver a mis encuestas
         </Link>
-      </Pagina>
+      </AreaUsuario>
     )
   }
 
   return (
-    <Pagina>
+    <AreaUsuario>
       <div className="flex items-center justify-between gap-4">
-        <Link to="/encuestas" className="text-sm text-unam-azul hover:underline">
-          ← Mis encuestas
+        <Link to="/usuario" className="text-sm text-unam-azul hover:underline">
+          ← Encuestas
         </Link>
         <Link
-          to={`/encuestas/${idEncuesta}/resultados`}
+          to={`/usuario/encuestas/${idEncuesta}/resultados`}
           className="text-sm font-medium text-unam-azul hover:underline"
         >
           Ver resultados →
@@ -193,69 +170,13 @@ export default function EncuestaDetalle() {
 
         <div className="space-y-6">
           {editable && (
-            <Tarjeta titulo="Agregar pregunta" descripcion="Se toma del catálogo compartido.">
-              <form onSubmit={agregar} className="space-y-4">
-                <Selector
-                  etiqueta="Pregunta"
-                  required
-                  value={idPregunta}
-                  onChange={(e) => setIdPregunta(e.target.value)}
-                >
-                  <option value="">Selecciona una…</option>
-                  {disponibles.map((p) => (
-                    <option key={p.idPregunta} value={p.idPregunta}>
-                      {p.pregunta}
-                    </option>
-                  ))}
-                </Selector>
-
-                <Selector
-                  etiqueta="Forma de responder"
-                  required
-                  value={idTipoRespuesta}
-                  onChange={(e) => {
-                    setIdTipoRespuesta(e.target.value)
-                    setSeleccionadas([])
-                  }}
-                >
-                  <option value="">Selecciona una…</option>
-                  {(tiposRespuesta.datos ?? []).map((t) => (
-                    <option key={t.idTipoRespuesta} value={t.idTipoRespuesta}>
-                      {t.tipoRespuesta}
-                    </option>
-                  ))}
-                </Selector>
-
-                {idTipoRespuesta && !esTextoLibre && (
-                  <fieldset>
-                    <legend className="text-sm font-medium text-slate-700">
-                      Opciones <span className="font-normal text-slate-500">(al menos dos)</span>
-                    </legend>
-                    <div className="mt-2 space-y-1.5">
-                      {(opciones.datos ?? []).map((o) => (
-                        <label key={o.idOpcion} className="flex items-center gap-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={seleccionadas.includes(o.idOpcion)}
-                            onChange={(e) =>
-                              setSeleccionadas((prev) =>
-                                e.target.checked
-                                  ? [...prev, o.idOpcion]
-                                  : prev.filter((x) => x !== o.idOpcion),
-                              )
-                            }
-                          />
-                          <span className="text-slate-700">{o.opcion}</span>
-                          <span className="text-xs text-slate-400">peso {o.peso ?? '—'}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                )}
-
-                <Boton type="submit">Agregar a la encuesta</Boton>
-              </form>
-            </Tarjeta>
+            <AgregarPregunta
+              idEncuesta={idEncuesta}
+              preguntasDelCatalogo={disponibles}
+              tiposRespuesta={tiposRespuesta.datos ?? []}
+              opciones={opciones.datos ?? []}
+              onAgregada={encuesta.recargar}
+            />
           )}
 
           <Tarjeta titulo={`Preguntas (${d.preguntas.length})`}>
@@ -317,6 +238,6 @@ export default function EncuestaDetalle() {
           </Tarjeta>
         </div>
       </div>
-    </Pagina>
+    </AreaUsuario>
   )
 }

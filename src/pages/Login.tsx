@@ -9,7 +9,7 @@ export default function Login() {
   const { iniciarSesion } = useSession()
   const navegar = useNavigate()
   const ubicacion = useLocation()
-  const destino = (ubicacion.state as { desde?: string } | null)?.desde ?? '/'
+  const destino = (ubicacion.state as { desde?: string } | null)?.desde ?? '/usuario'
 
   const [correo, setCorreo] = useState('')
   const [contrasena, setContrasena] = useState('')

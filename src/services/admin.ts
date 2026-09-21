@@ -105,3 +105,17 @@ export const resultadosDeEncuesta = (id: number) => api<Resultados>(`/encuestas/
 
 export const comentariosDeEncuesta = (id: number, pagina = 1, limite = 20) =>
   api<Comentarios>(`/encuestas/${id}/comentarios?pagina=${pagina}&limite=${limite}`)
+
+export const crearYAgregarPregunta = (
+  idEncuesta: number,
+  body: {
+    pregunta: string
+    idTipoRespuesta: number
+    opcionesNuevas?: { opcion: string; peso: number }[]
+    idOpciones?: number[]
+  },
+) =>
+  api<{ idEncuestaPregunta: number; orden: number }>(`/encuestas/${idEncuesta}/preguntas/nueva`, {
+    method: 'POST',
+    body,
+  })
