@@ -1,75 +1,52 @@
-# React + TypeScript + Vite
+# Encuestas de Satisfacción — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Cliente del sistema de encuestas de satisfacción de la FES Acatlán.
+React + TypeScript + Vite + Tailwind CSS.
 
-Currently, two official plugins are available:
+Necesita el API corriendo: ver el repositorio `cuestionarioDeSatisfaccionAPI`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Levantar el entorno
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+cp .env.example .env        # ajusta VITE_API_BASE_URL si el API no está en :3000
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Queda en <http://localhost:5173>.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Cómo se maneja la sesión
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- `services/http.ts` es el único punto que habla con el API. Pone el
+  `Authorization`, convierte los errores en `ApiError` con el mensaje que mandó
+  el servidor, y ante un 401 borra la sesión y emite el evento
+  `auth:no-autorizado`.
+- `context/SessionProvider.tsx` escucha ese evento, así que un 401 en cualquier
+  petición cierra la sesión, no solo en la pantalla que la disparó.
+- La sesión se guarda en `localStorage` y se relee al arrancar.
 
-```
+## Roles
+
+`types/auth.ts` define los códigos de rol, y son los mismos que emite el API en
+`CA_Roles.Codigo`: `administrador` y `administrador_encuestas`. Se comparan
+contra `usuario.rol`, que es el **código**, nunca contra `rolNombre`, que es solo
+la etiqueta visible y puede cambiar.
+
+`ProtectedRoute` manda al login cuando no hay sesión, y a `/sin-permiso` cuando
+hay sesión pero el rol no alcanza. Son casos distintos: rebotar al login a quien
+ya inició sesión deja al usuario sin entender qué pasó.
+
+## Estilos
+
+Tailwind CSS v4, configurado desde `src/index.css` con el plugin
+`@tailwindcss/vite`. Los colores institucionales están declarados como tokens en
+el bloque `@theme` y se usan como `bg-unam-azul`, `text-unam-oro`, etc.
+
+## Comandos
+
+| Comando | Para qué |
+|---|---|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Typecheck y compilación de producción |
+| `npm run lint` | ESLint |
+| `npm run preview` | Sirve lo compilado |
