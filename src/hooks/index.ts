@@ -1,0 +1,1 @@
+export { useCargar } from './useCargar'
