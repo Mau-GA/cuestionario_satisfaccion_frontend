@@ -32,7 +32,7 @@ export function BarraNavegacion() {
     <header className="bg-unam-azul text-white">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-6 py-3">
         <NavLink to="/usuario" aria-label="Inicio">
-          <LogoUNAM className="h-7" />
+          <LogoUNAM className="h-15" />
         </NavLink>
 
         <nav className="flex flex-wrap items-center gap-1">
@@ -56,7 +56,7 @@ export function BarraNavegacion() {
             Salir
           </button>
           {/* Se oculta en pantallas angostas: ahí la barra ya va apretada. */}
-          <LogoFESAcatlan className="hidden h-7 lg:block" />
+          <LogoFESAcatlan className="hidden h-15 lg:block" />
         </div>
       </div>
     </header>

@@ -109,7 +109,9 @@ export const comentariosDeEncuesta = (id: number, pagina = 1, limite = 20) =>
 export const crearYAgregarPregunta = (
   idEncuesta: number,
   body: {
-    pregunta: string
+    /** Texto de una pregunta nueva, o `idPregunta` para reutilizar una del catálogo. */
+    pregunta?: string
+    idPregunta?: number
     idTipoRespuesta: number
     opcionesNuevas?: { opcion: string; peso: number }[]
     idOpciones?: number[]

@@ -4,38 +4,32 @@ import { Link, useParams } from 'react-router-dom'
 import { AreaUsuario } from '../components/AreaUsuario'
 import { Aviso, Boton, Campo, Tarjeta } from '../components/ui'
 import { AgregarPregunta } from '../components/AgregarPregunta'
+import { VistaPreviaEncuesta } from '../components/VistaPreviaEncuesta'
 import { EstadoPill } from '../components/EstadoEncuesta'
-import { aInputLocal, deInputLocal, fecha } from '../utils/fechas'
 import { useCargar } from '../hooks'
 import { ApiError } from '../services/http'
 import {
   actualizarEncuesta,
   detalleEncuesta,
-  listarOpciones,
   listarPreguntas,
   listarTiposRespuesta,
   quitarPreguntaDeEncuesta,
   reordenarPreguntas,
 } from '../services/admin'
-import type { EncuestaDetalle as Detalle, Opcion, Pregunta, TipoRespuesta } from '../types/admin'
+import { aInputLocal, deInputLocal, fecha } from '../utils/fechas'
+import type { EncuestaDetalle as Detalle, Pregunta, TipoRespuesta } from '../types/admin'
 
 export default function EncuestaDetalle() {
   const { id } = useParams<{ id: string }>()
   const idEncuesta = Number(id)
 
   const encuesta = useCargar<Detalle>(() => detalleEncuesta(idEncuesta))
-  const preguntas = useCargar<Pregunta[]>(() => listarPreguntas(true))
+  const catalogo = useCargar<Pregunta[]>(() => listarPreguntas(true))
   const tiposRespuesta = useCargar<TipoRespuesta[]>(() => listarTiposRespuesta(true))
-  const opciones = useCargar<Opcion[]>(() => listarOpciones(true))
 
   const [error, setError] = useState<string | null>(null)
-
   const d = encuesta.datos
   const editable = d?.editable ?? false
-
-  // Las que ya están en la encuesta no se pueden volver a agregar.
-  const yaUsadas = new Set((d?.preguntas ?? []).map((p) => p.idPregunta))
-  const disponibles = (preguntas.datos ?? []).filter((p) => !yaUsadas.has(p.idPregunta))
 
   async function intentar(accion: () => Promise<unknown>) {
     setError(null)
@@ -60,13 +54,13 @@ export default function EncuestaDetalle() {
     )
   }
 
-  async function mover(indice: number, direccion: -1 | 1) {
+  function mover(indice: number, direccion: -1 | 1) {
     if (!d) return
     const ids = d.preguntas.map((p) => p.idEncuestaPregunta)
     const destino = indice + direccion
     if (destino < 0 || destino >= ids.length) return
     ;[ids[indice], ids[destino]] = [ids[destino], ids[indice]]
-    await intentar(() => reordenarPreguntas(idEncuesta, ids))
+    void intentar(() => reordenarPreguntas(idEncuesta, ids))
   }
 
   if (encuesta.cargando) {
@@ -81,11 +75,13 @@ export default function EncuestaDetalle() {
       <AreaUsuario>
         <Aviso tipo="error">{encuesta.error ?? 'Encuesta no encontrada'}</Aviso>
         <Link to="/usuario" className="mt-4 inline-block text-sm text-unam-azul hover:underline">
-          ← Volver a mis encuestas
+          ← Volver a encuestas
         </Link>
       </AreaUsuario>
     )
   }
+
+  const yaEnLaEncuesta = new Set(d.preguntas.map((p) => p.idPregunta))
 
   return (
     <AreaUsuario>
@@ -100,6 +96,7 @@ export default function EncuestaDetalle() {
           Ver resultados →
         </Link>
       </div>
+
       <div className="mt-2 mb-6 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold text-unam-azul">{d.titulo}</h1>
         <EstadoPill estado={d.estado} />
@@ -116,127 +113,97 @@ export default function EncuestaDetalle() {
 
       <Aviso tipo="error">{error}</Aviso>
 
-      <div className="mt-4 grid gap-6 lg:grid-cols-[24rem_1fr]">
-        <Tarjeta titulo="Datos de la encuesta">
-          <form onSubmit={guardarDatos} className="space-y-4">
-            <Campo etiqueta="Título" name="titulo" defaultValue={d.titulo} disabled={!editable} required />
-            <Campo
-              etiqueta="Inicio de vigencia"
-              name="inicio"
-              type="datetime-local"
-              defaultValue={aInputLocal(d.fechaInicioVigencia)}
-              disabled={!editable}
-            />
-            <Campo
-              etiqueta="Cierre de vigencia"
-              name="fin"
-              type="datetime-local"
-              defaultValue={aInputLocal(d.fechaFinVigencia)}
-              disabled={!editable}
-            />
-            <label className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
-                name="visible"
-                defaultChecked={d.visibleEnInicio}
-                disabled={!editable}
-                className="mt-0.5"
-              />
-              <span className="text-slate-700">
-                Mostrar en la pantalla pública de inicio
-                <span className="block text-xs text-slate-500">
-                  Si no, la única forma de llegar es con el enlace de invitación.
-                </span>
-              </span>
-            </label>
-            {editable && (
-              <Boton type="submit" className="w-full">
-                Guardar
-              </Boton>
-            )}
-          </form>
+      <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_22rem]">
+        {/* La encuesta primero: es lo que se está construyendo. */}
+        <section>
+          <h2 className="mb-3 text-sm font-semibold tracking-wide text-slate-500 uppercase">
+            Así se verá ({d.preguntas.length}{' '}
+            {d.preguntas.length === 1 ? 'pregunta' : 'preguntas'})
+          </h2>
 
-          {d.tokenPublico && (
-            <div className="mt-5 border-t border-slate-100 pt-4">
-              <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
-                Enlace para responder
-              </p>
-              <code className="mt-1 block overflow-x-auto rounded bg-slate-50 px-2 py-1.5 text-xs text-slate-700">
-                /responder/{d.tokenPublico}
-              </code>
+          <VistaPreviaEncuesta
+            preguntas={d.preguntas}
+            editable={editable}
+            onMover={mover}
+            onQuitar={(idEncuestaPregunta) =>
+              void intentar(() => quitarPreguntaDeEncuesta(idEncuesta, idEncuestaPregunta))
+            }
+          />
+
+          {editable && (
+            <div className="mt-4">
+              <AgregarPregunta
+                idEncuesta={idEncuesta}
+                catalogo={catalogo.datos ?? []}
+                yaEnLaEncuesta={yaEnLaEncuesta}
+                tiposRespuesta={tiposRespuesta.datos ?? []}
+                onAgregada={async () => {
+                  await encuesta.recargar()
+                  await catalogo.recargar()
+                }}
+              />
             </div>
           )}
-        </Tarjeta>
+        </section>
 
-        <div className="space-y-6">
-          {editable && (
-            <AgregarPregunta
-              idEncuesta={idEncuesta}
-              preguntasDelCatalogo={disponibles}
-              tiposRespuesta={tiposRespuesta.datos ?? []}
-              opciones={opciones.datos ?? []}
-              onAgregada={encuesta.recargar}
-            />
-          )}
+        <aside className="lg:order-last">
+          <Tarjeta titulo="Datos de la encuesta">
+            <form onSubmit={guardarDatos} className="space-y-4">
+              <Campo
+                etiqueta="Título"
+                name="titulo"
+                defaultValue={d.titulo}
+                disabled={!editable}
+                required
+              />
+              <Campo
+                etiqueta="Inicio de vigencia"
+                name="inicio"
+                type="datetime-local"
+                defaultValue={aInputLocal(d.fechaInicioVigencia)}
+                disabled={!editable}
+              />
+              <Campo
+                etiqueta="Cierre de vigencia"
+                name="fin"
+                type="datetime-local"
+                defaultValue={aInputLocal(d.fechaFinVigencia)}
+                disabled={!editable}
+              />
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="visible"
+                  defaultChecked={d.visibleEnInicio}
+                  disabled={!editable}
+                  className="mt-0.5"
+                />
+                <span className="text-slate-700">
+                  Mostrar en la pantalla pública de inicio
+                  <span className="block text-xs text-slate-500">
+                    Si no, la única forma de llegar es con el enlace de invitación.
+                  </span>
+                </span>
+              </label>
+              {editable && (
+                <Boton type="submit" className="w-full">
+                  Guardar
+                </Boton>
+              )}
+            </form>
 
-          <Tarjeta titulo={`Preguntas (${d.preguntas.length})`}>
-            {d.preguntas.length === 0 && (
-              <p className="text-sm text-slate-500">Todavía no tiene preguntas.</p>
+            {d.tokenPublico && (
+              <div className="mt-5 border-t border-slate-100 pt-4">
+                <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
+                  Enlace para responder
+                </p>
+                <code className="mt-1 block overflow-x-auto rounded bg-slate-50 px-2 py-1.5 text-xs text-slate-700">
+                  /responder/{d.tokenPublico}
+                </code>
+              </div>
             )}
-            <ol className="space-y-3">
-              {d.preguntas.map((p, i) => (
-                <li
-                  key={p.idEncuestaPregunta}
-                  className="rounded-lg border border-slate-200 px-4 py-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-medium text-slate-800">
-                        {p.orden}. {p.pregunta}
-                      </p>
-                      <p className="mt-0.5 text-xs text-slate-500">{p.tipoRespuesta}</p>
-                      {p.opciones.length > 0 && (
-                        <p className="mt-1.5 text-xs text-slate-600">
-                          {p.opciones.map((o) => o.opcion).join(' · ')}
-                        </p>
-                      )}
-                    </div>
-                    {editable && (
-                      <div className="flex shrink-0 gap-1">
-                        <Boton
-                          variante="secundario"
-                          aria-label="Subir"
-                          disabled={i === 0}
-                          onClick={() => void mover(i, -1)}
-                        >
-                          ↑
-                        </Boton>
-                        <Boton
-                          variante="secundario"
-                          aria-label="Bajar"
-                          disabled={i === d.preguntas.length - 1}
-                          onClick={() => void mover(i, 1)}
-                        >
-                          ↓
-                        </Boton>
-                        <Boton
-                          variante="secundario"
-                          onClick={() =>
-                            void intentar(() =>
-                              quitarPreguntaDeEncuesta(idEncuesta, p.idEncuestaPregunta),
-                            )
-                          }
-                        >
-                          Quitar
-                        </Boton>
-                      </div>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ol>
           </Tarjeta>
-        </div>
+        </aside>
       </div>
     </AreaUsuario>
   )
