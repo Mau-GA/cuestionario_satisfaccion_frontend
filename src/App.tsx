@@ -9,6 +9,8 @@ import Unidades from './pages/Unidades'
 import Catalogos from './pages/Catalogos'
 import Encuestas from './pages/Encuestas'
 import EncuestaDetalle from './pages/EncuestaDetalle'
+import Responder from './pages/Responder'
+import InicioPublico from './pages/InicioPublico'
 import SinPermiso from './pages/SinPermiso'
 
 export default function App() {
@@ -16,6 +18,10 @@ export default function App() {
     <SessionProvider>
       <BrowserRouter>
         <Routes>
+          {/* Abiertas: quien responde no necesita cuenta. */}
+          <Route path="/inicio" element={<InicioPublico />} />
+          <Route path="/responder/:token" element={<Responder />} />
+
           <Route path="/login" element={<Login />} />
           <Route path="/sin-permiso" element={<SinPermiso />} />
 

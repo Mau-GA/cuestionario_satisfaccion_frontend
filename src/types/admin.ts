@@ -75,3 +75,38 @@ export interface PreguntaDeEncuesta {
 export interface EncuestaDetalle extends EncuestaResumen {
   preguntas: PreguntaDeEncuesta[]
 }
+
+// ---------- Público ----------
+
+export interface OpcionPublica {
+  idOpcion: number
+  opcion: string
+  peso: string | null
+}
+
+export interface PreguntaPublica {
+  idEncuestaPregunta: number
+  pregunta: string
+  tipoRespuesta: string
+  orden: number
+  opciones: OpcionPublica[]
+}
+
+export interface CuestionarioPublico {
+  titulo: string
+  tipoEncuesta: string | null
+  unidadResponsable: string | null
+  fechaFinVigencia: string | null
+  preguntas: PreguntaPublica[]
+}
+
+export interface EncuestaEnInicio {
+  titulo: string
+  tipoEncuesta: string | null
+  unidadResponsable: string | null
+  fechaFinVigencia: string | null
+  token: string
+}
+
+/** Lo que el usuario lleva contestado: por pregunta, una opción o un texto. */
+export type Respuesta = { idOpcion: number } | { respuesta: string }
