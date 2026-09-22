@@ -10,6 +10,11 @@ interface LoginResponse {
   usuario: User
 }
 
+interface RefreshResponse {
+  accessToken: string
+  refreshToken: string
+}
+
 export async function login(
   correoElectronico: string,
   contraseña: string,
@@ -42,6 +47,35 @@ export async function login(
   return session
 }
 
+export async function refreshSession(): Promise<boolean> {
+  const session = getSession()
+  if (!session?.refreshToken) return false
+
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: session.refreshToken }),
+    })
+  } catch {
+    return false
+  }
+
+  const body = await readBody(response)
+  if (!response.ok) return false
+
+  const data = body as unknown as RefreshResponse
+  const updated: Session = {
+    ...session,
+    token: data.accessToken,
+    refreshToken: data.refreshToken,
+    expiresAt: tokenExpiry(data.accessToken),
+  }
+  localStorage.setItem(SESSION_KEY, JSON.stringify(updated))
+  return true
+}
+
 export function logout(): void {
   localStorage.removeItem(SESSION_KEY)
 }
@@ -62,7 +96,11 @@ export function isAuthenticated(): boolean {
 
 export function hasRole(...roles: Role[]): boolean {
   const session = getSession()
-  return session !== null && session.user.rol !== null && roles.includes(session.user.rol)
+  return (
+    session !== null &&
+    session.user.rol !== null &&
+    roles.includes(session.user.rol)
+  )
 }
 
 export function hasTokenExpired(session: Session): boolean {
@@ -96,6 +134,6 @@ async function readBody(response: Response): Promise<unknown> {
   try {
     return JSON.parse(text)
   } catch {
-    return text
+    return null
   }
 }

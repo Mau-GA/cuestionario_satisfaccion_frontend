@@ -9,12 +9,19 @@ export class ApiError extends Error {
 }
 
 export function serverMessage(body: unknown): string {
+  let message: unknown = null
   if (typeof body === 'object' && body !== null && 'message' in body) {
-    const message = (body as { message: unknown }).message
-    if (typeof message === 'string' && message.length > 0) return message
-    if (Array.isArray(message) && message.length > 0) {
-      return message.join(' · ')
-    }
+    message = (body as { message: unknown }).message
   }
-  return 'Error del servidor'
+  if (typeof message === 'string' && message.length > 0) {
+    const sanitized = message.trim()
+    if (/^Cannot\s+(GET|POST|PUT|PATCH|DELETE)/.test(sanitized)) {
+      return 'La ruta solicitada no existe en el servidor'
+    }
+    return sanitized
+  }
+  if (Array.isArray(message) && message.length > 0) {
+    return message.join(' · ')
+  }
+  return 'Ocurrió un error al contactar el servidor'
 }
