@@ -11,15 +11,15 @@ import { ApiError } from '../services/http'
 import { crearEncuesta, listarEncuestas, listarTiposEncuesta } from '../services/admin'
 import { fecha } from '../utils/fechas'
 import { ROL } from '../types/auth'
-import type { EncuestaResumen, TipoEncuesta } from '../types/admin'
+import type { EncuestaEnLista, EncuestaResumen, EncuestaResumenAjena, TipoEncuesta } from '../types/admin'
 
 /** Ya pasaron las cerradas; el resto sigue vigente o por abrir. */
-const yaPaso = (e: EncuestaResumen) => e.estado === 'cerrada'
+const yaPaso = (e: EncuestaEnLista) => e.estado === 'cerrada'
 
 export default function Usuario() {
   const { sesion } = useSession()
   const esEncuestador = sesion?.usuario.rol === ROL.ADMINISTRADOR_ENCUESTAS
-  const encuestas = useCargar<EncuestaResumen[]>(listarEncuestas)
+  const encuestas = useCargar<EncuestaEnLista[]>(listarEncuestas)
   const [creando, setCreando] = useState(false)
   const [modalContrasena, setModalContrasena] = useState(false)
 
@@ -34,7 +34,7 @@ export default function Usuario() {
           <h1 className="text-2xl font-semibold text-unam-azul">Encuestas</h1>
           <p className="mt-1 text-sm text-slate-500">
             {esEncuestador
-              ? 'Las encuestas de tu unidad responsable.'
+              ? 'Las tuyas, completas. Las de tus compañeros de unidad, solo el título.'
               : 'Todas las unidades. Como administrador puedes consultarlas y ver sus resultados, pero no editarlas.'}
           </p>
         </div>
@@ -90,7 +90,7 @@ function Grupo({
 }: {
   titulo: string
   nota: string
-  encuestas: EncuestaResumen[]
+  encuestas: EncuestaEnLista[]
   apagadas?: boolean
 }) {
   return (
@@ -98,36 +98,60 @@ function Grupo({
       <h2 className="text-sm font-semibold tracking-wide text-slate-500 uppercase">{titulo}</h2>
       <p className="mb-3 text-xs text-slate-400">{nota}</p>
       <div className={`space-y-2 ${apagadas ? 'opacity-75' : ''}`}>
-        {encuestas.map((e) => (
-          <article
-            key={e.idEncuesta}
-            className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-slate-200 bg-white px-5 py-4"
-          >
-            <div className="min-w-56 flex-1">
-              <Link
-                to={`/usuario/encuestas/${e.idEncuesta}`}
-                className="font-medium text-unam-azul hover:underline"
-              >
-                {e.titulo}
-              </Link>
-              <p className="mt-0.5 text-xs text-slate-500">
-                {e.unidadResponsable ?? '—'} · {e.tipoEncuesta ?? 'sin tipo'}
-              </p>
-            </div>
-            <p className="text-xs text-slate-500">
-              {fecha(e.fechaInicioVigencia)} → {fecha(e.fechaFinVigencia)}
-            </p>
-            <EstadoPill estado={e.estado} />
-            <Link
-              to={`/usuario/encuestas/${e.idEncuesta}/resultados`}
-              className="text-sm font-medium text-unam-azul hover:underline"
-            >
-              Resultados
-            </Link>
-          </article>
-        ))}
+        {encuestas.map((e) =>
+          e.propia ? (
+            <FilaPropia key={e.idEncuesta} encuesta={e} />
+          ) : (
+            <FilaAjena key={e.idEncuesta} encuesta={e} />
+          ),
+        )}
       </div>
     </section>
+  )
+}
+
+function FilaPropia({ encuesta: e }: { encuesta: EncuestaResumen }) {
+  return (
+    <article className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-slate-200 bg-white px-5 py-4">
+      <div className="min-w-56 flex-1">
+        <Link
+          to={`/usuario/encuestas/${e.idEncuesta}`}
+          className="font-medium text-unam-azul hover:underline"
+        >
+          {e.titulo}
+        </Link>
+        <p className="mt-0.5 text-xs text-slate-500">
+          {e.unidadResponsable ?? '—'} · {e.tipoEncuesta ?? 'sin tipo'}
+        </p>
+      </div>
+      <p className="text-xs text-slate-500">
+        {fecha(e.fechaInicioVigencia)} → {fecha(e.fechaFinVigencia)}
+      </p>
+      <EstadoPill estado={e.estado} />
+      <Link
+        to={`/usuario/encuestas/${e.idEncuesta}/resultados`}
+        className="text-sm font-medium text-unam-azul hover:underline"
+      >
+        Resultados
+      </Link>
+    </article>
+  )
+}
+
+/**
+ * La de un compañero de unidad: sin enlace, sin fechas, sin resultados. Entrar
+ * por id de todos modos da 404 del lado del API, así que ocultar el enlace
+ * aquí es una cortesía de la interfaz, no lo que de verdad protege el dato.
+ */
+function FilaAjena({ encuesta: e }: { encuesta: EncuestaResumenAjena }) {
+  return (
+    <article className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-4">
+      <div className="min-w-56 flex-1">
+        <p className="font-medium text-slate-600">{e.titulo}</p>
+        <p className="mt-0.5 text-xs text-slate-400">{e.unidadResponsable ?? '—'} · de un colega</p>
+      </div>
+      <EstadoPill estado={e.estado} />
+    </article>
   )
 }
 

@@ -4,6 +4,7 @@ import type {
   EstadoSolicitud,
   ListaSolicitudes,
   EncuestaDetalle,
+  EncuestaEnLista,
   EncuestaResumen,
   Opcion,
   Pregunta,
@@ -71,7 +72,7 @@ export const actualizarTipoRespuesta = (id: number, body: Record<string, unknown
 
 // ---------- Encuestas ----------
 
-export const listarEncuestas = () => api<EncuestaResumen[]>('/encuestas')
+export const listarEncuestas = () => api<EncuestaEnLista[]>('/encuestas')
 
 export const detalleEncuesta = (id: number) => api<EncuestaDetalle>(`/encuestas/${id}`)
 

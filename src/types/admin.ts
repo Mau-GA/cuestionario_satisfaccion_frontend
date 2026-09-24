@@ -61,7 +61,24 @@ export interface EncuestaResumen {
   estado: EstadoEncuesta
   /** Falso en cuanto la encuesta abre: a partir de ahí no se toca. */
   editable: boolean
+  propia: true
 }
+
+/**
+ * Lo que se ve de una encuesta de la misma unidad que creó alguien más: nada
+ * que sirva para actuar sobre ella, solo que existe y sigue vigente. Entrar
+ * a su detalle por id de todos modos da 404 del lado del API.
+ */
+export interface EncuestaResumenAjena {
+  idEncuesta: number
+  titulo: string
+  unidadResponsable: string | null
+  estado: EstadoEncuesta
+  propia: false
+}
+
+/** Lo que trae /encuestas: la propia completa, o la ajena recortada. */
+export type EncuestaEnLista = EncuestaResumen | EncuestaResumenAjena
 
 export interface PreguntaDeEncuesta {
   idEncuestaPregunta: number
