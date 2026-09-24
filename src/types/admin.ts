@@ -199,3 +199,36 @@ export interface ListaSolicitudes {
   limit: number
   totalPages: number
 }
+
+// ---------- Invitaciones ----------
+
+export type EstadoInvitacion = 'pendiente' | 'enviada' | 'respondida'
+
+export interface Invitacion {
+  idInvitacion: number
+  correoElectronico: string
+  estado: EstadoInvitacion
+  fechaEnvio: string | null
+  fechaUso: string | null
+}
+
+export interface ListaInvitaciones {
+  data: Invitacion[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+export interface DetalleInvitacion {
+  correo: string
+  estado: 'enviada' | 'reenviada' | 'ya_respondio' | 'fallo_envio'
+}
+
+export interface ResumenInvitar {
+  enviadas: number
+  reenviadas: number
+  yaRespondieron: number
+  fallidas: number
+  detalle: DetalleInvitacion[]
+}

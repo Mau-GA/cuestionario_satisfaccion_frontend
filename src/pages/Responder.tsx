@@ -6,7 +6,12 @@ import { Boton } from '../components/ui'
 import { Barra, Caritas, Estrellas, TextoLibre } from '../components/respuestas'
 import { useCargar } from '../hooks'
 import { ApiError } from '../services/http'
-import { cuestionario, enviarRespuestas } from '../services/publico'
+import {
+  cuestionario,
+  cuestionarioPorInvitacion,
+  enviarRespuestas,
+  enviarRespuestasInvitacion,
+} from '../services/publico'
 import { fecha } from '../utils/fechas'
 import type { CuestionarioPublico, PreguntaPublica } from '../types/admin'
 
@@ -36,9 +41,16 @@ function Mensaje({ titulo, texto }: { titulo: string; texto: string }) {
   )
 }
 
-export default function Responder() {
+interface Props {
+  /** Por invitación, el token es de un solo uso: en vez de una regla del enlace público, es del propio token. */
+  modo?: 'publico' | 'invitacion'
+}
+
+export default function Responder({ modo = 'publico' }: Props) {
   const { token = '' } = useParams<{ token: string }>()
-  const encuesta = useCargar<CuestionarioPublico>(() => cuestionario(token))
+  const obtenerCuestionario = modo === 'invitacion' ? cuestionarioPorInvitacion : cuestionario
+  const mandarRespuestas = modo === 'invitacion' ? enviarRespuestasInvitacion : enviarRespuestas
+  const encuesta = useCargar<CuestionarioPublico>(() => obtenerCuestionario(token))
 
   const [valores, setValores] = useState<Record<number, Valor>>({})
   const [error, setError] = useState<string | null>(null)
@@ -59,7 +71,7 @@ export default function Responder() {
         setError('Responde al menos una pregunta antes de enviar.')
         return
       }
-      const r = await enviarRespuestas(token, respuestas)
+      const r = await mandarRespuestas(token, respuestas)
       setListo({ completa: r.completa })
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo enviar. Inténtalo de nuevo.')

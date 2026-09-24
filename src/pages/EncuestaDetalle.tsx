@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { AreaUsuario } from '../components/AreaUsuario'
 import { Aviso, Boton, Campo, Tarjeta } from '../components/ui'
 import { AgregarPregunta } from '../components/AgregarPregunta'
+import { PanelInvitaciones } from '../components/PanelInvitaciones'
 import { VistaPreviaEncuesta } from '../components/VistaPreviaEncuesta'
 import { EstadoPill } from '../components/EstadoEncuesta'
 import { useCargar } from '../hooks'
@@ -203,6 +204,10 @@ export default function EncuestaDetalle() {
               </div>
             )}
           </Tarjeta>
+
+          <div className="mt-6">
+            <PanelInvitaciones idEncuesta={idEncuesta} />
+          </div>
         </aside>
       </div>
     </AreaUsuario>

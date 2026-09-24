@@ -26,6 +26,7 @@ export default function App() {
           {/* Públicas: quien responde no necesita cuenta. */}
           <Route path="/" element={<InicioPublico />} />
           <Route path="/responder/:token" element={<Responder />} />
+          <Route path="/i/:token" element={<Responder modo="invitacion" />} />
           <Route path="/login" element={<Login />} />
           <Route path="/solicitar-acceso" element={<SolicitarAcceso />} />
 

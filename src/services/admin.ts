@@ -2,12 +2,14 @@ import { api } from './http'
 import type {
   Comentarios,
   EstadoSolicitud,
+  ListaInvitaciones,
   ListaSolicitudes,
   EncuestaDetalle,
   EncuestaEnLista,
   EncuestaResumen,
   Opcion,
   Pregunta,
+  ResumenInvitar,
   Resultados,
   TipoEncuesta,
   TipoRespuesta,
@@ -137,3 +139,11 @@ export const aprobarSolicitud = (id: number) =>
 
 export const rechazarSolicitud = (id: number, motivo: string) =>
   api<{ mensaje: string }>(`/solicitudes-acceso/${id}/rechazar`, { method: 'PATCH', body: { motivo } })
+
+// ---------- Invitaciones ----------
+
+export const listarInvitaciones = (idEncuesta: number, page = 1, limit = 20) =>
+  api<ListaInvitaciones>(`/encuestas/${idEncuesta}/invitaciones?page=${page}&limit=${limit}`)
+
+export const invitar = (idEncuesta: number, correos: string[]) =>
+  api<ResumenInvitar>(`/encuestas/${idEncuesta}/invitaciones`, { method: 'POST', body: { correos } })
