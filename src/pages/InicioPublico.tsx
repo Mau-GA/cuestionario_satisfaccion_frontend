@@ -46,17 +46,6 @@ export default function InicioPublico() {
             </Link>
           ))}
         </div>
-
-        <p className="mt-8 text-center text-sm text-slate-500">
-          ¿Administras encuestas?{' '}
-          <Link to="/login" className="text-unam-azul hover:underline">
-            Entrar al sistema
-          </Link>{' '}
-          ·{' '}
-          <Link to="/solicitar-acceso" className="text-unam-azul hover:underline">
-            Solicitar acceso
-          </Link>
-        </p>
       </main>
       <PieDePagina />
     </div>
