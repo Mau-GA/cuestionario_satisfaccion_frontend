@@ -1,19 +1,25 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Aviso, Boton } from './ui'
+import { Aviso, Boton, Selector } from './ui'
 import { CampoPregunta } from './CampoPregunta'
+import { EditorOpciones } from './EditorOpciones'
+import type { OpcionEnEdicion } from './EditorOpciones'
 import { VistaPrevia } from './Vista'
 import { PRESETS } from '../utils/presets'
 import type { Preset } from '../utils/presets'
 import { ApiError } from '../services/http'
 import { crearYAgregarPregunta } from '../services/admin'
-import type { Pregunta, TipoRespuesta } from '../types/admin'
+import type { Opcion, Pregunta, TipoRespuesta } from '../types/admin'
+
+const TEXTO_LIBRE = 'texto libre'
+const esTextoLibre = (nombre: string) => nombre.trim().toLowerCase() === TEXTO_LIBRE
 
 interface Props {
   idEncuesta: number
   catalogo: Pregunta[]
   yaEnLaEncuesta: Set<number>
   tiposRespuesta: TipoRespuesta[]
+  catalogoOpciones: Opcion[]
   onAgregada: () => Promise<void> | void
 }
 
@@ -30,6 +36,7 @@ export function AgregarPregunta({
   catalogo,
   yaEnLaEncuesta,
   tiposRespuesta,
+  catalogoOpciones,
   onAgregada,
 }: Props) {
   const [abierto, setAbierto] = useState(false)
@@ -46,7 +53,12 @@ export function AgregarPregunta({
     )
   }
 
-  return <Formulario {...{ idEncuesta, catalogo, yaEnLaEncuesta, tiposRespuesta, onAgregada }} onCerrar={() => setAbierto(false)} />
+  return (
+    <Formulario
+      {...{ idEncuesta, catalogo, yaEnLaEncuesta, tiposRespuesta, catalogoOpciones, onAgregada }}
+      onCerrar={() => setAbierto(false)}
+    />
+  )
 }
 
 function Formulario({
@@ -54,38 +66,76 @@ function Formulario({
   catalogo,
   yaEnLaEncuesta,
   tiposRespuesta,
+  catalogoOpciones,
   onAgregada,
   onCerrar,
 }: Props & { onCerrar: () => void }) {
   const [texto, setTexto] = useState('')
   const [delCatalogo, setDelCatalogo] = useState<Pregunta | null>(null)
-  const [escala, setEscala] = useState<Preset>(PRESETS[0])
+  const [idTipoRespuesta, setIdTipoRespuesta] = useState<number | null>(
+    tiposRespuesta[0]?.idTipoRespuesta ?? null,
+  )
+  const [opciones, setOpciones] = useState<OpcionEnEdicion[]>([])
   const [error, setError] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
 
-  const idDeTipo = (nombre: string) =>
-    tiposRespuesta.find((t) => t.tipoRespuesta.trim().toLowerCase() === nombre.trim().toLowerCase())
-      ?.idTipoRespuesta
+  const tipoElegido = tiposRespuesta.find((t) => t.idTipoRespuesta === idTipoRespuesta)
+  const textoLibre = tipoElegido ? esTextoLibre(tipoElegido.tipoRespuesta) : false
+
+  function elegirTipo(id: number) {
+    setIdTipoRespuesta(id)
+    const nuevoTipo = tiposRespuesta.find((t) => t.idTipoRespuesta === id)
+    if (nuevoTipo && esTextoLibre(nuevoTipo.tipoRespuesta)) setOpciones([])
+  }
+
+  function usarPlantilla(preset: Preset) {
+    const tipo = tiposRespuesta.find(
+      (t) => t.tipoRespuesta.trim().toLowerCase() === preset.tipoRespuesta.trim().toLowerCase(),
+    )
+    if (!tipo) {
+      setError(`El catálogo no tiene el tipo de respuesta "${preset.tipoRespuesta}".`)
+      return
+    }
+    setError(null)
+    setIdTipoRespuesta(tipo.idTipoRespuesta)
+    setOpciones(
+      preset.opciones.map((o) => ({
+        clave: `nueva-${crypto.randomUUID()}`,
+        origen: 'nueva',
+        opcion: o.opcion,
+        peso: o.peso,
+      })),
+    )
+  }
 
   async function agregar(evento: FormEvent) {
     evento.preventDefault()
-    const idTipoRespuesta = idDeTipo(escala.tipoRespuesta)
     if (!idTipoRespuesta) {
-      setError(`El catálogo no tiene el tipo de respuesta "${escala.tipoRespuesta}".`)
+      setError('Elige cómo se va a responder.')
+      return
+    }
+    if (!textoLibre && opciones.length < 2) {
+      setError('Una pregunta con opciones necesita al menos dos.')
       return
     }
     setError(null)
     setEnviando(true)
     try {
+      const idOpciones = opciones.filter((o) => o.origen === 'existente').map((o) => o.idOpcion!)
+      const opcionesNuevas = opciones
+        .filter((o) => o.origen === 'nueva')
+        .map((o) => ({ opcion: o.opcion, peso: o.peso }))
       await crearYAgregarPregunta(idEncuesta, {
         // O se reutiliza la del catálogo, o se crea con el texto escrito.
         ...(delCatalogo ? { idPregunta: delCatalogo.idPregunta } : { pregunta: texto.trim() }),
         idTipoRespuesta,
-        opcionesNuevas: escala.opciones.length ? escala.opciones : undefined,
+        idOpciones: idOpciones.length ? idOpciones : undefined,
+        opcionesNuevas: opcionesNuevas.length ? opcionesNuevas : undefined,
       })
       await onAgregada()
       setTexto('')
       setDelCatalogo(null)
+      setOpciones([])
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo agregar la pregunta')
     } finally {
@@ -121,34 +171,52 @@ function Formulario({
 
       <fieldset className="mt-6">
         <legend className="text-sm font-medium text-slate-700">Cómo se responde</legend>
-        <div role="radiogroup" className="mt-2 grid gap-3">
+
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <span className="py-1 text-xs text-slate-500">Empezar desde una escala común:</span>
           {PRESETS.map((p) => (
-            <div
+            <button
               key={p.id}
-              role="radio"
-              tabIndex={0}
-              aria-checked={escala.id === p.id}
-              onClick={() => setEscala(p)}
-              onKeyDown={(e) => {
-                if (e.key === ' ' || e.key === 'Enter') {
-                  e.preventDefault()
-                  setEscala(p)
-                }
-              }}
-              className={`cursor-pointer rounded-lg border p-3 transition focus:ring-2 focus:ring-unam-azul/30 focus:outline-none ${
-                escala.id === p.id
-                  ? 'border-unam-azul ring-2 ring-unam-azul/20'
-                  : 'border-slate-200 hover:border-slate-300'
-              }`}
+              type="button"
+              onClick={() => usarPlantilla(p)}
+              title={p.descripcion}
+              className="rounded-full border border-slate-200 px-2.5 py-1 text-xs text-slate-600 transition hover:border-unam-azul-claro hover:text-unam-azul"
             >
-              <p className="text-sm font-medium text-slate-800">{p.nombre}</p>
-              <p className="mt-0.5 text-xs text-slate-500">{p.descripcion}</p>
-              <div className="mt-3">
-                <VistaPrevia tipoRespuesta={p.tipoRespuesta} opciones={p.opciones} />
-              </div>
-            </div>
+              {p.nombre}
+            </button>
           ))}
         </div>
+
+        <div className="mt-3">
+          <Selector
+            etiqueta="Tipo de respuesta"
+            value={idTipoRespuesta ?? ''}
+            onChange={(e) => elegirTipo(Number(e.target.value))}
+          >
+            {tiposRespuesta.map((t) => (
+              <option key={t.idTipoRespuesta} value={t.idTipoRespuesta}>
+                {t.tipoRespuesta}
+              </option>
+            ))}
+          </Selector>
+        </div>
+
+        {tipoElegido &&
+          (textoLibre ? (
+            <div className="mt-4 border-t border-slate-100 pt-4">
+              <p className="mb-2 text-xs text-slate-500">Así se verá: un espacio abierto, sin opciones.</p>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <VistaPrevia tipoRespuesta={tipoElegido.tipoRespuesta} opciones={[]} />
+              </div>
+            </div>
+          ) : (
+            <EditorOpciones
+              tipoRespuesta={tipoElegido.tipoRespuesta}
+              catalogo={catalogoOpciones}
+              opciones={opciones}
+              onCambiar={setOpciones}
+            />
+          ))}
       </fieldset>
 
       <div className="mt-4">

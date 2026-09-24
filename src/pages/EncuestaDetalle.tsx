@@ -12,13 +12,14 @@ import { ApiError } from '../services/http'
 import {
   actualizarEncuesta,
   detalleEncuesta,
+  listarOpciones,
   listarPreguntas,
   listarTiposRespuesta,
   quitarPreguntaDeEncuesta,
   reordenarPreguntas,
 } from '../services/admin'
 import { aInputLocal, deInputLocal, fecha } from '../utils/fechas'
-import type { EncuestaDetalle as Detalle, Pregunta, TipoRespuesta } from '../types/admin'
+import type { EncuestaDetalle as Detalle, Opcion, Pregunta, TipoRespuesta } from '../types/admin'
 
 export default function EncuestaDetalle() {
   const { id } = useParams<{ id: string }>()
@@ -27,6 +28,7 @@ export default function EncuestaDetalle() {
   const encuesta = useCargar<Detalle>(() => detalleEncuesta(idEncuesta))
   const catalogo = useCargar<Pregunta[]>(() => listarPreguntas(true))
   const tiposRespuesta = useCargar<TipoRespuesta[]>(() => listarTiposRespuesta(true))
+  const catalogoOpciones = useCargar<Opcion[]>(() => listarOpciones(true))
 
   const [error, setError] = useState<string | null>(null)
   const d = encuesta.datos
@@ -138,9 +140,11 @@ export default function EncuestaDetalle() {
                 catalogo={catalogo.datos ?? []}
                 yaEnLaEncuesta={yaEnLaEncuesta}
                 tiposRespuesta={tiposRespuesta.datos ?? []}
+                catalogoOpciones={catalogoOpciones.datos ?? []}
                 onAgregada={async () => {
                   await encuesta.recargar()
                   await catalogo.recargar()
+                  await catalogoOpciones.recargar()
                 }}
               />
             </div>
