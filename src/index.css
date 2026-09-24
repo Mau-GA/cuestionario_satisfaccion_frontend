@@ -1,30 +1,28 @@
 @import 'tailwindcss';
 
-:root {
-  --azul-unam: #003d79;
-  --oro-unam: #d59f0f;
+@theme {
+  --color-azul-unam: #003d79;
+  --color-oro-unam: #d59f0f;
+  --color-ink: var(--text);
+  --color-ink-inverse: var(--text-h);
+  --color-surface: var(--bg);
+  --color-surface-alt: var(--bg-alt);
+  --color-outline: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-accent-soft: var(--accent-bg);
+  --font-sans: Helvetica, Arial, 'Segoe UI', Roboto, sans-serif;
+}
 
-  --text: var(--azul-unam);
+:root {
+  --text: var(--color-azul-unam);
   --text-h: #ffffff;
   --bg: #ffffff;
   --bg-alt: #f4f6f9;
   --border: #d9dee5;
-  --accent: var(--azul-unam);
-  --accent-2: var(--oro-unam);
+  --accent: var(--color-azul-unam);
+  --accent-2: var(--color-oro-unam);
   --accent-bg: rgba(0, 61, 121, 0.08);
-
-  --sans: Helvetica, Arial, 'Segoe UI', Roboto, sans-serif;
-  --heading: Helvetica, Arial, 'Segoe UI', Roboto, sans-serif;
-
-  font: 17px/1.5 var(--sans);
-  letter-spacing: 0.16px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -34,51 +32,38 @@
     --bg: #10151c;
     --bg-alt: #161d26;
     --border: #2b3642;
-    --accent: var(--oro-unam);
-    --accent-2: var(--azul-unam);
+    --accent: var(--color-oro-unam);
+    --accent-2: var(--color-azul-unam);
     --accent-bg: rgba(213, 159, 15, 0.12);
   }
 }
 
-body {
-  margin: 0;
-  background: #ffffff;
-}
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    color: var(--color-ink-inverse);
+  }
 
-#root {
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-}
+  h1 {
+    margin: 0;
+    font-size: 30px;
+    letter-spacing: -0.4px;
+  }
 
-h1,
-h2,
-h3 {
-  font-family: var(--heading);
-  font-weight: 700;
-  color: var(--text-h);
-}
+  p {
+    margin: 0;
+  }
 
-h1 {
-  margin: 0;
-  font-size: 30px;
-  letter-spacing: -0.4px;
-}
-
-p {
-  margin: 0;
-}
-
-a {
-  color: var(--azul-unam);
-}
-
-button {
-  font: inherit;
-}
-
-@media (prefers-color-scheme: dark) {
   a {
-    color: var(--oro-unam);
+    color: var(--color-azul-unam);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    a {
+      color: var(--color-oro-unam);
+    }
   }
 }
