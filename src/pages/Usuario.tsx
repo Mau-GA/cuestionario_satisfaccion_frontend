@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { AreaUsuario } from '../components/AreaUsuario'
 import { Aviso, Boton, Campo, Selector, Tarjeta } from '../components/ui'
 import { EstadoPill } from '../components/EstadoEncuesta'
+import { ModalContrasena } from '../components/ModalContrasena'
 import { useCargar } from '../hooks'
 import { useSession } from '../context/useSession'
 import { ApiError } from '../services/http'
@@ -20,6 +21,7 @@ export default function Usuario() {
   const esEncuestador = sesion?.usuario.rol === ROL.ADMINISTRADOR_ENCUESTAS
   const encuestas = useCargar<EncuestaResumen[]>(listarEncuestas)
   const [creando, setCreando] = useState(false)
+  const [modalContrasena, setModalContrasena] = useState(false)
 
   const todas = encuestas.datos ?? []
   const activas = todas.filter((e) => !yaPaso(e))
@@ -38,6 +40,22 @@ export default function Usuario() {
         </div>
         {esEncuestador && <Boton onClick={() => setCreando(true)}>Crear encuesta</Boton>}
       </div>
+
+      {/* Una cuenta que entró con Google nace sin contraseña: sin este aviso,
+          perder el acceso a esa cuenta de Google la deja sin forma de entrar. */}
+      {sesion && !sesion.usuario.tieneContrasena && (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p>
+            <strong>Tu cuenta no tiene contraseña.</strong> Hoy solo puedes entrar con Google;
+            crea una para poder entrar también con correo y contraseña.
+          </p>
+          <Boton onClick={() => setModalContrasena(true)}>Crear contraseña</Boton>
+        </div>
+      )}
+
+      {modalContrasena && (
+        <ModalContrasena tieneContrasena={false} onCerrar={() => setModalContrasena(false)} />
+      )}
 
       {creando && <DialogoNueva onCerrar={() => setCreando(false)} />}
 

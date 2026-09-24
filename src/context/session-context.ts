@@ -5,6 +5,8 @@ export interface ValorSesion {
   sesion: Sesion | null
   iniciarSesion: (correo: string, contrasena: string) => Promise<void>
   iniciarSesionConGoogle: (credential: string) => Promise<void>
+  /** Vuelve a pedir /auth/perfil y actualiza sesion.usuario con lo que regrese. */
+  actualizarPerfil: () => Promise<void>
   cerrarSesion: () => void
 }
 

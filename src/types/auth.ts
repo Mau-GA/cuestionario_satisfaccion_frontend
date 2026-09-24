@@ -18,6 +18,8 @@ export interface Usuario {
   rol: CodigoRol | null
   /** Nombre visible del rol: solo para mostrar. */
   rolNombre: string | null
+  /** Falso en una cuenta que solo ha entrado con Google. */
+  tieneContrasena: boolean
 }
 
 export interface Sesion {

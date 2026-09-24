@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { LogoFESAcatlan, LogoUNAM } from './Logos'
+import { ModalContrasena } from './ModalContrasena'
 import { useSession } from '../context/useSession'
 import { ROL } from '../types/auth'
 import type { CodigoRol } from '../types/auth'
@@ -27,6 +29,7 @@ export function BarraNavegacion() {
   const navegar = useNavigate()
   const rol = sesion?.usuario.rol
   const entradas = ENTRADAS.filter((e) => rol && e.roles.includes(rol))
+  const [modalContrasena, setModalContrasena] = useState(false)
 
   return (
     <header className="bg-unam-azul text-white">
@@ -47,6 +50,12 @@ export function BarraNavegacion() {
             {sesion?.usuario.correoElectronico}
           </span>
           <button
+            onClick={() => setModalContrasena(true)}
+            className="rounded-lg border border-white/30 px-3 py-1.5 text-sm font-medium transition hover:bg-white/10"
+          >
+            {sesion?.usuario.tieneContrasena ? 'Mi contraseña' : 'Crear contraseña'}
+          </button>
+          <button
             onClick={() => {
               cerrarSesion()
               navegar('/login', { replace: true })
@@ -59,6 +68,13 @@ export function BarraNavegacion() {
           <LogoFESAcatlan className="hidden h-15 lg:block" />
         </div>
       </div>
+
+      {modalContrasena && (
+        <ModalContrasena
+          tieneContrasena={!!sesion?.usuario.tieneContrasena}
+          onCerrar={() => setModalContrasena(false)}
+        />
+      )}
     </header>
   )
 }

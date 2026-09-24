@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { borrarSesion, EVENTO_NO_AUTORIZADO, guardarSesion, leerSesion } from '../services/session'
-import { login as loginRequest, loginConGoogle as loginConGoogleRequest } from '../services/auth'
+import {
+  login as loginRequest,
+  loginConGoogle as loginConGoogleRequest,
+  perfil as perfilRequest,
+} from '../services/auth'
 import { SessionContext } from './session-context'
 import type { Sesion } from '../types/auth'
 
@@ -32,9 +36,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSesion(nueva)
   }, [])
 
+  // No depende de `sesion` en las dependencias: usa la forma funcional de
+  // setSesion para leer el valor vigente, así su identidad no cambia cada vez
+  // que cambia la sesión.
+  const actualizarPerfil = useCallback(async () => {
+    const usuario = await perfilRequest()
+    setSesion((previa) => {
+      if (!previa) return previa
+      const actualizada = { ...previa, usuario }
+      guardarSesion(actualizada)
+      return actualizada
+    })
+  }, [])
+
   const valor = useMemo(
-    () => ({ sesion, iniciarSesion, iniciarSesionConGoogle, cerrarSesion }),
-    [sesion, iniciarSesion, iniciarSesionConGoogle, cerrarSesion],
+    () => ({ sesion, iniciarSesion, iniciarSesionConGoogle, actualizarPerfil, cerrarSesion }),
+    [sesion, iniciarSesion, iniciarSesionConGoogle, actualizarPerfil, cerrarSesion],
   )
 
   return <SessionContext value={valor}>{children}</SessionContext>
