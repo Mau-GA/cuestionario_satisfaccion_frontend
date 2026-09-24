@@ -5,6 +5,7 @@ import { ROL } from './types/auth'
 import InicioPublico from './pages/InicioPublico'
 import Responder from './pages/Responder'
 import Login from './pages/Login'
+import SolicitarAcceso from './pages/SolicitarAcceso'
 import Usuario from './pages/Usuario'
 import EncuestaDetalle from './pages/EncuestaDetalle'
 import Resultados from './pages/Resultados'
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/" element={<InicioPublico />} />
           <Route path="/responder/:token" element={<Responder />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/solicitar-acceso" element={<SolicitarAcceso />} />
 
           {/* Detrás de la sesión. */}
           <Route

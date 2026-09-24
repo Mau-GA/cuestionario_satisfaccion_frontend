@@ -158,3 +158,27 @@ export interface Comentarios {
   limite: number
   totalPaginas: number
 }
+
+// ---------- Solicitudes de acceso ----------
+
+export type EstadoSolicitud = 'pendiente' | 'aprobada' | 'rechazada'
+
+export interface Solicitud {
+  idSolicitudAcceso: number
+  correoElectronico: string
+  estado: EstadoSolicitud
+  motivosRechazo: string | null
+  fechaSolicitud: string
+  fechaRevision: string | null
+  idUnidadResponsable: number
+  unidadResponsable: string | null
+  revisadaPor: string | null
+}
+
+export interface ListaSolicitudes {
+  data: Solicitud[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}

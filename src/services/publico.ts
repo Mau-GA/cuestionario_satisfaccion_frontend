@@ -17,3 +17,16 @@ export const enviarRespuestas = (
     `/publico/encuestas/${token}/respuestas`,
     { method: 'POST', body: { respuestas }, autenticada: false },
   )
+
+export const solicitarAcceso = (correoElectronico: string, idUnidadResponsable: number) =>
+  api<{ idSolicitudAcceso: number; mensaje: string }>('/publico/solicitudes-acceso', {
+    method: 'POST',
+    body: { correoElectronico, idUnidadResponsable },
+    autenticada: false,
+  })
+
+export const listarUnidadesPublicas = () =>
+  api<{ idUnidadResponsable: number; unidadResponsable: string }[]>(
+    '/publico/unidades-responsables',
+    { autenticada: false },
+  )

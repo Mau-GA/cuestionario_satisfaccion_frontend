@@ -51,6 +51,10 @@ export default function InicioPublico() {
           ¿Administras encuestas?{' '}
           <Link to="/login" className="text-unam-azul hover:underline">
             Entrar al sistema
+          </Link>{' '}
+          ·{' '}
+          <Link to="/solicitar-acceso" className="text-unam-azul hover:underline">
+            Solicitar acceso
           </Link>
         </p>
       </main>

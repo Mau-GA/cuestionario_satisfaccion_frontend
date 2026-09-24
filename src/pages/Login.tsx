@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useSession } from '../context/useSession'
 import { ApiError } from '../services/http'
 import { Encabezado, PieDePagina } from '../components/Layout'
@@ -93,7 +93,10 @@ export default function Login() {
           </div>
 
           <p className="mt-4 text-center text-sm text-slate-500">
-            ¿No tienes cuenta? Solicita acceso al administrador.
+            ¿No tienes cuenta?{' '}
+            <Link to="/solicitar-acceso" className="text-unam-azul hover:underline">
+              Solicita acceso
+            </Link>
           </p>
         </div>
       </main>

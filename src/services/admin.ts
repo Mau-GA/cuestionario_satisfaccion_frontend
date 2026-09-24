@@ -1,6 +1,8 @@
 import { api } from './http'
 import type {
   Comentarios,
+  EstadoSolicitud,
+  ListaSolicitudes,
   EncuestaDetalle,
   EncuestaResumen,
   Opcion,
@@ -121,3 +123,16 @@ export const crearYAgregarPregunta = (
     method: 'POST',
     body,
   })
+
+export const listarSolicitudes = (estado?: EstadoSolicitud, correo?: string, page = 1, limit = 20) => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) })
+  if (estado) params.set('estado', estado)
+  if (correo) params.set('correo', correo)
+  return api<ListaSolicitudes>(`/solicitudes-acceso?${params}`)
+}
+
+export const aprobarSolicitud = (id: number) =>
+  api<{ mensaje: string }>(`/solicitudes-acceso/${id}/aprobar`, { method: 'PATCH' })
+
+export const rechazarSolicitud = (id: number, motivo: string) =>
+  api<{ mensaje: string }>(`/solicitudes-acceso/${id}/rechazar`, { method: 'PATCH', body: { motivo } })
