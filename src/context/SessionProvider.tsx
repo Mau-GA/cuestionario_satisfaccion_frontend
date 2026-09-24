@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { borrarSesion, EVENTO_NO_AUTORIZADO, guardarSesion, leerSesion } from '../services/session'
-import { login as loginRequest } from '../services/auth'
+import { login as loginRequest, loginConGoogle as loginConGoogleRequest } from '../services/auth'
 import { SessionContext } from './session-context'
 import type { Sesion } from '../types/auth'
 
@@ -26,9 +26,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setSesion(nueva)
   }, [])
 
+  const iniciarSesionConGoogle = useCallback(async (credential: string) => {
+    const nueva = await loginConGoogleRequest(credential)
+    guardarSesion(nueva)
+    setSesion(nueva)
+  }, [])
+
   const valor = useMemo(
-    () => ({ sesion, iniciarSesion, cerrarSesion }),
-    [sesion, iniciarSesion, cerrarSesion],
+    () => ({ sesion, iniciarSesion, iniciarSesionConGoogle, cerrarSesion }),
+    [sesion, iniciarSesion, iniciarSesionConGoogle, cerrarSesion],
   )
 
   return <SessionContext value={valor}>{children}</SessionContext>

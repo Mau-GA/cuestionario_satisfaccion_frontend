@@ -4,9 +4,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useSession } from '../context/useSession'
 import { ApiError } from '../services/http'
 import { Encabezado, PieDePagina } from '../components/Layout'
+import { BotonGoogle } from '../components/BotonGoogle'
+import { GOOGLE_CLIENT_ID } from '../config'
 
 export default function Login() {
-  const { iniciarSesion } = useSession()
+  const { iniciarSesion, iniciarSesionConGoogle } = useSession()
   const navegar = useNavigate()
   const ubicacion = useLocation()
   const destino = (ubicacion.state as { desde?: string } | null)?.desde ?? '/usuario'
@@ -16,6 +18,10 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
 
+  function mensajeDeError(e: unknown) {
+    return e instanceof ApiError ? e.message : 'No se pudo conectar con el servidor. Inténtalo de nuevo.'
+  }
+
   async function enviar(evento: FormEvent) {
     evento.preventDefault()
     setError(null)
@@ -24,11 +30,20 @@ export default function Login() {
       await iniciarSesion(correo, contrasena)
       navegar(destino, { replace: true })
     } catch (e) {
-      setError(
-        e instanceof ApiError
-          ? e.message
-          : 'No se pudo conectar con el servidor. Inténtalo de nuevo.',
-      )
+      setError(mensajeDeError(e))
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  async function entrarConGoogle(credential: string) {
+    setError(null)
+    setEnviando(true)
+    try {
+      await iniciarSesionConGoogle(credential)
+      navegar(destino, { replace: true })
+    } catch (e) {
+      setError(mensajeDeError(e))
     } finally {
       setEnviando(false)
     }
@@ -90,6 +105,10 @@ export default function Login() {
                 {enviando ? 'Entrando…' : 'Entrar'}
               </button>
             </form>
+
+            {/* BotonGoogle no dibuja nada si no hay VITE_GOOGLE_CLIENT_ID, así
+                que el separador tampoco tiene por qué aparecer sin él. */}
+            <GoogleConSeparador enviando={enviando} onCredential={entrarConGoogle} />
           </div>
 
           <p className="mt-4 text-center text-sm text-slate-500">
@@ -102,5 +121,32 @@ export default function Login() {
       </main>
       <PieDePagina />
     </div>
+  )
+}
+
+/**
+ * El separador "o" solo tiene sentido si el botón de Google va a aparecer:
+ * por eso los dos se ocultan juntos cuando no hay VITE_GOOGLE_CLIENT_ID.
+ */
+function GoogleConSeparador({
+  enviando,
+  onCredential,
+}: {
+  enviando: boolean
+  onCredential: (credential: string) => void
+}) {
+  if (!GOOGLE_CLIENT_ID) return null
+
+  return (
+    <>
+      <div className="my-5 flex items-center gap-3">
+        <div className="h-px flex-1 bg-slate-200" />
+        <span className="text-xs text-slate-400">o</span>
+        <div className="h-px flex-1 bg-slate-200" />
+      </div>
+      <div className={enviando ? 'pointer-events-none opacity-60' : undefined}>
+        <BotonGoogle onCredential={onCredential} />
+      </div>
+    </>
   )
 }

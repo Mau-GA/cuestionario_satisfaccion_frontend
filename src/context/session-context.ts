@@ -4,6 +4,7 @@ import type { Sesion } from '../types/auth'
 export interface ValorSesion {
   sesion: Sesion | null
   iniciarSesion: (correo: string, contrasena: string) => Promise<void>
+  iniciarSesionConGoogle: (credential: string) => Promise<void>
   cerrarSesion: () => void
 }
 
