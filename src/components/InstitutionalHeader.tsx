@@ -38,15 +38,37 @@ function InstitutionalHeader() {
 
   return (
     <header className="bg-azul-unam border-b-[5px] border-oro-unam">
-      <div
-        className="mx-auto max-w-[1120px] px-6 py-3 grid grid-cols-[1fr_auto] items-center gap-2
-          [grid-template-areas:'left_right'_'titles_titles']
-          min-[720px]:grid-cols-[1fr_auto_1fr] min-[720px]:gap-4
-          min-[720px]:[grid-template-areas:'left_titles_right']"
-      >
+      {session && (
+        <div className="bg-black/15">
+          <div className="mx-auto max-w-[1120px] px-6 py-[6px] flex items-center justify-end gap-3">
+            <div className="flex items-center gap-2 min-w-0 rounded-full bg-white/10 px-3 py-[3px] text-white">
+              <span className="h-2 w-2 rounded-full bg-oro-unam shrink-0" aria-hidden />
+              <span className="text-[12.5px] font-semibold tracking-[0.2px] truncate max-w-[45vw] min-[720px]:max-w-[260px]">
+                {session.user.correoElectronico}
+              </span>
+              <span className="text-white/30" aria-hidden>
+                |
+              </span>
+              <span className="text-[12px] opacity-80 tracking-[0.2px] truncate max-w-[40vw] min-[720px]:max-w-[200px]">
+                {nombreUnidad ?? 'Sin unidad'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="text-[12px] font-semibold text-white/85 cursor-pointer bg-transparent border border-white/30 rounded-md px-3 py-[3px]
+                hover:bg-white/10 hover:text-white transition-colors"
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="mx-auto max-w-[1120px] px-6 py-3 flex items-center justify-between gap-3">
         <Link
           to="/"
-          className="[grid-area:left] justify-self-start flex items-center no-underline"
+          className="flex items-center no-underline shrink-0"
           aria-label="Inicio"
         >
           <img
@@ -56,32 +78,11 @@ function InstitutionalHeader() {
           />
         </Link>
 
-        <div className="[grid-area:titles] flex flex-col items-center gap-[3px] text-center text-white">
-          <strong className="text-[15px] min-[720px]:text-[17px] tracking-[0.2px]">
-            Universidad Nacional Autónoma de México
-          </strong>
-          <small className="text-[12.5px] min-[720px]:text-sm opacity-85 tracking-[0.3px]">
-            Por mi raza hablará el espíritu
-          </small>
-        </div>
-
-        <div className="[grid-area:right] justify-self-end flex items-center gap-3">
-          {session && (
-            <div className="flex flex-col items-end text-white text-right leading-tight">
-              <span className="text-[13px] font-semibold tracking-[0.2px] truncate max-w-[220px]">
-                {session.user.correoElectronico}
-              </span>
-              <span className="text-[11.5px] opacity-85 tracking-[0.2px]">
-                {nombreUnidad ?? 'Sin unidad'}
-              </span>
-            </div>
-          )}
-          <img
-            src="/logo-fesa-acatlan.png"
-            alt="FES Acatlán"
-            className="h-[39px] min-[720px]:h-[50px] w-auto block"
-          />
-        </div>
+        <img
+          src="/logo-fesa-acatlan.png"
+          alt="FES Acatlán"
+          className="h-[39px] min-[720px]:h-[50px] w-auto block shrink-0"
+        />
       </div>
 
       {items.length > 0 && (
@@ -102,14 +103,6 @@ function InstitutionalHeader() {
                 {item.label}
               </NavLink>
             ))}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="ml-0 min-[720px]:ml-auto text-[13px] font-semibold text-white/85 cursor-pointer bg-transparent border border-white/30 rounded-md px-3 py-1
-                hover:bg-white/10 hover:text-white transition-colors"
-            >
-              Cerrar sesión
-            </button>
           </div>
         </nav>
       )}
