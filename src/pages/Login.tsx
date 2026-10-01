@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import InstitutionalHeader from '../components/InstitutionalHeader'
 import InstitutionalFooter from '../components/InstitutionalFooter'
 import { isAuthenticated, login } from '../services/auth'
@@ -103,6 +103,10 @@ function Login() {
           <small className="block mt-[22px] text-center text-xs opacity-70">
             Demo: administrador@cedetec.edu.bo / Admin123!
           </small>
+
+          <p className="mt-6 text-center text-sm">
+            ¿Aún no tienes cuenta? <Link to="/solicitar-acceso" className="text-accent hover:underline font-medium">Solicitar acceso</Link>
+          </p>
         </main>
       </div>
       <InstitutionalFooter />
