@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Documentación personal (no subir)
+FRONTEND_CHANGES.md
+GIT_COMMANDS_GUIDE.md
+GIT_LEARNING_GUIDE.md
