@@ -7,6 +7,7 @@ export const UNAUTHORIZED_EVENT = 'auth:unauthorized'
 interface RequestOptions {
   method?: string
   body?: unknown
+  auth?: boolean
 }
 
 let refreshing: Promise<boolean> | null = null
@@ -23,22 +24,28 @@ async function request<T>(
   options: RequestOptions = {},
 ): Promise<T> {
   const method = options.method ?? 'GET'
+  const requireAuth = options.auth ?? true
 
   let session = getSession()
 
-  if (!session?.token || hasTokenExpired(session)) {
-    const refreshed = await refetchSession()
-    if (!refreshed) {
-      logout()
-      window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
-      throw new ApiError('La sesión ha expirado. Vuelve a iniciar sesión.', 401)
+  if (requireAuth) {
+    if (!session?.token || hasTokenExpired(session)) {
+      const refreshed = await refetchSession()
+      if (!refreshed) {
+        logout()
+        window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+        throw new ApiError('La sesión ha expirado. Vuelve a iniciar sesión.', 401)
+      }
+      session = getSession()
     }
-    session = getSession()
   }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${session?.token}`,
+  }
+
+  if (requireAuth && session?.token) {
+    headers.Authorization = `Bearer ${session.token}`
   }
 
   let response: Response
@@ -54,7 +61,7 @@ async function request<T>(
 
   let body = await readBody(response)
 
-  if (response.status === 401 && session?.refreshToken) {
+  if (requireAuth && response.status === 401 && session?.refreshToken) {
     const refreshed = await refetchSession()
     if (!refreshed) {
       logout()
@@ -77,7 +84,7 @@ async function request<T>(
     body = await readBody(response)
   }
 
-  if (response.status === 401) {
+  if (requireAuth && response.status === 401) {
     logout()
     window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
     throw new ApiError(serverMessage(body), 401)
