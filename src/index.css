@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-azul-unam: #003d79;
   --color-oro-unam: #d59f0f;
@@ -25,20 +27,11 @@
   --accent-bg: rgba(0, 61, 121, 0.08);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #c7d0da;
-    --text-h: #ffffff;
-    --bg: #10151c;
-    --bg-alt: #161d26;
-    --border: #2b3642;
-    --accent: var(--color-oro-unam);
-    --accent-2: var(--color-azul-unam);
-    --accent-bg: rgba(213, 159, 15, 0.12);
-  }
-}
-
 @layer base {
+  body {
+    background-color: #ffffff;
+  }
+
   h1,
   h2,
   h3 {
@@ -59,11 +52,5 @@
 
   a {
     color: var(--color-azul-unam);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    a {
-      color: var(--color-oro-unam);
-    }
   }
 }

@@ -8,6 +8,7 @@ import Admin from './pages/Admin'
 import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
 import Login from './pages/Login'
+import SolicitudAcceso from './pages/SolicitudAcceso'
 
 function SessionWatcher() {
   const navigate = useNavigate()
@@ -33,6 +34,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/solicitar-acceso" element={<SolicitudAcceso />} />
         <Route
           path="/dashboard"
           element={

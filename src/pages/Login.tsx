@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import InstitutionalHeader from '../components/InstitutionalHeader'
 import InstitutionalFooter from '../components/InstitutionalFooter'
 import { isAuthenticated, login } from '../services/auth'
@@ -42,8 +42,8 @@ function Login() {
   return (
     <div className="min-h-svh flex flex-col">
       <InstitutionalHeader />
-      <div className="flex-1 grid place-items-center p-6 box-border bg-azul-unam">
-        <main className="w-full max-w-[400px] box-border pt-10 px-8 pb-7 rounded-2xl bg-surface border border-outline shadow-[0_20px_40px_rgba(0,0,0,0.25)]">
+      <div className="flex-1 grid place-items-center p-6 box-border bg-[#ffffff]">
+        <main className="w-full max-w-[400px] box-border pt-10 px-8 pb-7 rounded-2xl bg-[#ffffff] border border-outline shadow-[0_20px_40px_rgba(0,0,0,0.25)]">
           <header className="text-center mb-7">
             <h1 className="m-0 mb-2 text-[26px] tracking-[-0.4px] text-ink">Cuestionario de satisfacción</h1>
             <p className="text-[15px]">Inicia sesión para continuar</p>
@@ -82,7 +82,7 @@ function Login() {
 
             {error && (
               <p
-                className="m-0 px-[14px] py-[10px] rounded-lg text-sm bg-[#fee2e2] text-[#b91c1c] dark:bg-[#450a0a] dark:text-[#fecaca]"
+                className="m-0 px-[14px] py-[10px] rounded-lg text-sm bg-oro-unam/15 text-azul-unam border border-oro-unam dark:text-oro-unam"
                 role="alert"
               >
                 {error}
@@ -103,6 +103,10 @@ function Login() {
           <small className="block mt-[22px] text-center text-xs opacity-70">
             Demo: administrador@cedetec.edu.bo / Admin123!
           </small>
+
+          <p className="mt-6 text-center text-sm">
+            ¿Aún no tienes cuenta? <Link to="/solicitar-acceso" className="text-accent hover:underline font-medium">Solicitar acceso</Link>
+          </p>
         </main>
       </div>
       <InstitutionalFooter />
