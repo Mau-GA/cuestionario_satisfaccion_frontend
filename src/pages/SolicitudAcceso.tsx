@@ -57,20 +57,20 @@ function SolicitudAcceso() {
     return (
       <div className="min-h-svh flex flex-col">
         <InstitutionalHeader />
-        <div className="flex-1 grid place-items-center p-6 box-border bg-azul-unam">
-          <main className="w-full max-w-[400px] box-border pt-10 px-8 pb-7 rounded-2xl bg-surface border border-outline shadow-[0_20px_40px_rgba(0,0,0,0.25)]">
+        <div className="flex-1 grid place-items-center p-6 box-border bg-[#ffffff]">
+          <main className="w-full max-w-[400px] box-border pt-10 px-8 pb-7 rounded-2xl bg-[#ffffff] border border-outline shadow-[0_20px_40px_rgba(0,0,0,0.25)]">
             <header className="text-center mb-7">
-              <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-accent-soft flex items-center justify-center">
+                <svg className="w-8 h-8 text-azul-unam" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <h1 className="m-0 mb-2 text-[26px] tracking-[-0.4px] text-ink">Solicitud enviada</h1>
-              <p className="text-[15px] text-gray-600">Tu solicitud de acceso ha sido registrada correctamente</p>
+              <p className="text-[15px] opacity-70">Tu solicitud de acceso ha sido registrada correctamente</p>
             </header>
 
-            <div className="p-4 rounded-lg bg-green-50 border border-green-200 mb-6">
-              <p className="m-0 text-sm text-green-800">
+            <div className="p-4 rounded-lg bg-oro-unam/15 border border-oro-unam mb-6">
+              <p className="m-0 text-sm text-azul-unam dark:text-oro-unam">
                 <strong>Queda en revisión.</strong> El administrador evaluará tu solicitud y, si es aprobada,
                 recibirás un correo con las credenciales de acceso.
               </p>
@@ -141,7 +141,7 @@ function SolicitudAcceso() {
 
             {error && (
               <p
-                className="m-0 px-[14px] py-[10px] rounded-lg text-sm bg-[#fee2e2] text-[#b91c1c] dark:bg-[#450a0a] dark:text-[#fecaca]"
+                className="m-0 px-[14px] py-[10px] rounded-lg text-sm bg-oro-unam/15 text-azul-unam border border-oro-unam dark:text-oro-unam"
                 role="alert"
               >
                 {error}
