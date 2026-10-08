@@ -3,8 +3,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import InstitutionalHeader from '../components/InstitutionalHeader'
 import InstitutionalFooter from '../components/InstitutionalFooter'
-import { fetchUnidadesActivas, solicitarAcceso } from '../services/solicitudes'
-import type { UnidadResponsable } from '../types/solicitudes'
+import { listUnidadesActivasPublic, solicitarAcceso, type UnidadResponsable } from '../services/solicitudAcceso'
 
 function SolicitudAcceso() {
   const navigate = useNavigate()
@@ -20,8 +19,10 @@ function SolicitudAcceso() {
   useEffect(() => {
     async function loadUnidades() {
       try {
-        const data = await fetchUnidadesActivas()
+        const data = await listUnidadesActivasPublic()
         setUnidades(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'No se pudieron cargar las unidades responsables')
       } finally {
         setLoadingUnidades(false)
       }
@@ -119,36 +120,23 @@ function SolicitudAcceso() {
 
             <label className="flex flex-col gap-[6px] text-sm font-semibold">
               <span>Unidad responsable</span>
-              {loadingUnidades ? (
-                <select
-                  value={idUnidadResponsable}
-                  onChange={(event) => setIdUnidad(event.target.value || '')}
-                  required
-                  disabled
-                  className="font-normal px-[14px] py-3 rounded-lg border border-outline bg-surface text-ink box-border
-                    opacity-60 cursor-not-allowed"
-                >
-                  <option value="">Selecciona una unidad</option>
-                </select>
-              ) : (
-                <select
-                  value={idUnidadResponsable}
-                  onChange={(event) => setIdUnidad(event.target.value)}
-                  required
-                  disabled={submitting}
-                  className="font-normal px-[14px] py-3 rounded-lg border border-outline bg-surface text-ink box-border
-                    transition-[border-color,box-shadow] duration-200
-                    focus:outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-bg)]
-                    disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <option value="">Selecciona una unidad</option>
-                  {unidades.map((unidad) => (
-                    <option key={unidad.idUnidadResponsable} value={unidad.idUnidadResponsable}>
-                      {unidad.nombre}
-                    </option>
-                  ))}
-                </select>
-              )}
+              <select
+                value={idUnidadResponsable}
+                onChange={(event) => setIdUnidad(event.target.value)}
+                required
+                disabled={submitting || loadingUnidades}
+                className="font-normal px-[14px] py-3 rounded-lg border border-outline bg-surface text-ink box-border
+                  transition-[border-color,box-shadow] duration-200
+                  focus:outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-bg)]
+                  disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <option value="">Selecciona una unidad</option>
+                {unidades.map((unidad) => (
+                  <option key={unidad.idUnidadResponsable} value={unidad.idUnidadResponsable}>
+                    {unidad.nombre}
+                  </option>
+                ))}
+              </select>
             </label>
 
             {error && (
