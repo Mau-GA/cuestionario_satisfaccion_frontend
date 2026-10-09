@@ -1,3 +1,4 @@
+
 import type { Role, Session, User } from '../types/auth'
 import { ROLES } from '../types/auth'
 
@@ -74,4 +75,37 @@ export function login(email: string, password: string): Session {
 
 export function logout(): void {
   localStorage.removeItem(SESSION_KEY)
+}
+
+const GOOGLE_CREDENCIAL_EMAILS: Record<string, User> = {
+  [USERS[0].email.toLowerCase()]: USERS[0],
+  [USERS[1].email.toLowerCase()]: USERS[1],
+}
+
+function decodeGoogleCredential(credential: string):{email: string}{
+  // encabezado.datos.firma en base 64
+  const datos = credential.split('.')[1]
+  const decodificado = JSON.parse(atob(datos)) as {email: string}
+  return decodificado
+}
+
+export async function loginWithGoogleCredential(
+  credential: string,
+): Promise<Session> {
+  
+  const{email}=decodeGoogleCredential(credential)
+  const user = GOOGLE_CREDENCIAL_EMAILS[email.toLowerCase()]
+  if(!user){
+    throw new Error(
+      'Tu cuenta de Google todavia no esta aprobada. Solicita acceso a un administrador'
+    )
+  }
+
+  const session: Session={
+    token: `token-google-${user.id}-${Date.now()}`,
+    expiresAt: Date.now() + SESSION_TTL_MS,
+    user
+  }
+  localStorage.setItem(SESSION_KEY,JSON.stringify(session))
+  return session
 }
