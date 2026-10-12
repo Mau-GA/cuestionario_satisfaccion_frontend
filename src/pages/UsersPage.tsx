@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { listUsers, createUser, updateUser, deleteUser, toggleUserActive, type User, type CreateUserData } from '../services/users'
+import { listUsers, createUser, updateUser, deleteUser, toggleUserActive } from '../services/users'
 import { listUnidadesActivas } from '../services/unidades'
+import type { User, CreateUserData } from '../types/admin'
 
 function UsersPage() {
   const [users, setUsers] = useState<User[]>([])

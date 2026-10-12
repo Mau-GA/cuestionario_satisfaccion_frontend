@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { getSession } from '../services/auth'
+import { getSession, hasTokenExpired } from '../services/auth'
 import type { Role } from '../types/auth'
 
 interface ProtectedRouteProps {
@@ -13,6 +13,10 @@ function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   const session = getSession()
 
   if (!session) {
+    return <Navigate to="/login" replace state={{ from: location }} />
+  }
+
+  if (hasTokenExpired(session)) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
