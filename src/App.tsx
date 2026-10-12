@@ -5,6 +5,9 @@ import { UNAUTHORIZED_EVENT } from './services/http'
 import { logout } from './services/auth'
 import { ROLES } from './types/auth'
 import Admin from './pages/Admin'
+import AdminDashboard from './pages/AdminDashboard'
+import UsersPage from './pages/UsersPage'
+import UnidadesPage from './pages/UnidadesPage'
 import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -50,7 +53,11 @@ function App() {
               <Admin />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="usuarios" element={<UsersPage />} />
+          <Route path="unidades" element={<UnidadesPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )
