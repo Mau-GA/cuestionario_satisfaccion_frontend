@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import AppLayout from '../components/AppLayout'
 import EstadoBadge from '../components/EstadoBadge'
 import EncuestaFormModal from '../components/EncuestaFormModal'
@@ -29,16 +29,23 @@ const CLASE_INPUT =
 
 const LABEL_ACCION: Record<AccionEncuesta, string> = {
   editar: 'Editar',
+  duplicar: 'Duplicar',
   cerrar: 'Cerrar',
   eliminar: 'Eliminar',
 }
 
 const ESTILO_ACCION: Record<AccionEncuesta, string> = {
   editar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
+  duplicar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   cerrar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   eliminar:
     'bg-oro-unam text-azul-unam border-oro-unam hover:brightness-110',
 }
+
+type FormEncuesta =
+  | { modo: 'crear' }
+  | { modo: 'editar' | 'duplicar'; encuesta: Encuesta }
+  | null
 
 function formatFecha(iso: string | null): string {
   if (!iso) return '—'
@@ -58,6 +65,10 @@ function formatVigencia(encuesta: Encuesta): string {
   return `${formatFecha(encuesta.fechaInicioVigencia)} – ${formatFecha(encuesta.fechaFinVigencia)}`
 }
 
+function getErrorMessage(err: unknown): string {
+  return err instanceof ApiError ? err.message : 'Error inesperado'
+}
+
 function Dashboard() {
   const session = getSession()
   const [encuestas, setEncuestas] = useState<Encuesta[]>([])
@@ -67,42 +78,24 @@ function Dashboard() {
   const [filtroEstado, setFiltroEstado] = useState<EstadoEncuesta | 'todas'>(
     'todas',
   )
-  const [formAbierto, setFormAbierto] = useState<Encuesta | 'nueva' | null>(
-    null,
-  )
+  const [formAbierto, setFormAbierto] = useState<FormEncuesta>(null)
   const [tipos, setTipos] = useState<TipoEncuesta[]>([])
   const [unidades, setUnidades] = useState<UnidadResponsable[]>([])
   const [procesando, setProcesando] = useState<number | null>(null)
 
-  function getErrorMessage(err: unknown): string {
-    return err instanceof ApiError ? err.message : 'Error inesperado'
-  }
-
-  function cargar(): void {
-    setLoading(true)
-    setError(null)
-    listEncuestas()
-      .then(setEncuestas)
-      .catch((err) => setError(getErrorMessage(err)))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => {
-    let cancelled = false
+  const cargar = useCallback((): void => {
     listEncuestas()
       .then((data) => {
-        if (!cancelled) setEncuestas(data)
+        setEncuestas(data)
+        setError(null)
       })
-      .catch((err) => {
-        if (!cancelled) setError(getErrorMessage(err))
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
+      .catch((err) => setError(getErrorMessage(err)))
+      .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    cargar()
+  }, [cargar])
 
   useEffect(() => {
     listTiposEncuesta()
@@ -155,6 +148,7 @@ function Dashboard() {
     setError(null)
     try {
       await cerrarEncuesta(encuesta.idEncuesta)
+      setLoading(true)
       cargar()
     } catch (err) {
       setError(getErrorMessage(err))
@@ -206,7 +200,10 @@ function Dashboard() {
           </select>
           <button
             type="button"
-            onClick={cargar}
+            onClick={() => {
+              setLoading(true)
+              cargar()
+            }}
             className="rounded-lg bg-transparent text-azul-unam border border-azul-unam font-bold cursor-pointer px-[18px] py-[10px]
               transition-[background-color,transform] duration-150 hover:bg-accent-soft active:scale-[0.98]"
           >
@@ -214,7 +211,7 @@ function Dashboard() {
           </button>
           <button
             type="button"
-            onClick={() => setFormAbierto('nueva')}
+            onClick={() => setFormAbierto({ modo: 'crear' })}
             className="rounded-lg bg-azul-unam text-white font-bold cursor-pointer px-[18px] py-[10px]
               transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[0.98]"
           >
@@ -285,7 +282,15 @@ function Dashboard() {
                                 disabled={bloqueada}
                                 onClick={() => {
                                   if (accion === 'editar') {
-                                    setFormAbierto(encuesta)
+                                    setFormAbierto({
+                                      modo: 'editar',
+                                      encuesta,
+                                    })
+                                  } else if (accion === 'duplicar') {
+                                    setFormAbierto({
+                                      modo: 'duplicar',
+                                      encuesta,
+                                    })
                                   } else {
                                     void handleCerrar(encuesta, accion)
                                   }
@@ -315,7 +320,8 @@ function Dashboard() {
 
       {formAbierto && (
         <EncuestaFormModal
-          encuesta={formAbierto === 'nueva' ? null : formAbierto}
+          modo={formAbierto.modo}
+          encuesta={formAbierto.modo === 'crear' ? null : formAbierto.encuesta}
           tipos={tipos}
           unidades={unidades}
           rol={session?.user.rol ?? null}
@@ -323,6 +329,7 @@ function Dashboard() {
           onClose={() => setFormAbierto(null)}
           onSaved={() => {
             setFormAbierto(null)
+            setLoading(true)
             cargar()
           }}
         />
