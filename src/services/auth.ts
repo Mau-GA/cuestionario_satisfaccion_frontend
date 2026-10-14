@@ -15,6 +15,8 @@ interface RefreshResponse {
   refreshToken: string
 }
 
+export type RefreshResult = 'ok' | 'invalid' | 'network'
+
 export async function login(
   correoElectronico: string,
   contraseña: string,
@@ -37,6 +39,30 @@ export async function login(
   }
 
   const data = body as unknown as LoginResponse
+  return persistLogin(data)
+}
+
+export async function loginGoogle(idToken: string): Promise<Session> {
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    })
+  } catch {
+    throw new ApiError('No se pudo conectar con el servidor', 0)
+  }
+
+  const body = await readBody(response)
+  if (!response.ok) {
+    throw new ApiError(serverMessage(body), response.status)
+  }
+
+  return persistLogin(body as unknown as LoginResponse)
+}
+
+function persistLogin(data: LoginResponse): Session {
   const session: Session = {
     token: data.accessToken,
     refreshToken: data.refreshToken,
@@ -47,9 +73,9 @@ export async function login(
   return session
 }
 
-export async function refreshSession(): Promise<boolean> {
+export async function refreshSession(): Promise<RefreshResult> {
   const session = getSession()
-  if (!session?.refreshToken) return false
+  if (!session?.refreshToken) return 'invalid'
 
   let response: Response
   try {
@@ -59,11 +85,11 @@ export async function refreshSession(): Promise<boolean> {
       body: JSON.stringify({ refreshToken: session.refreshToken }),
     })
   } catch {
-    return false
+    return 'network'
   }
 
   const body = await readBody(response)
-  if (!response.ok) return false
+  if (!response.ok) return 'invalid'
 
   const data = body as unknown as RefreshResponse
   const updated: Session = {
@@ -73,11 +99,28 @@ export async function refreshSession(): Promise<boolean> {
     expiresAt: tokenExpiry(data.accessToken),
   }
   localStorage.setItem(SESSION_KEY, JSON.stringify(updated))
-  return true
+  return 'ok'
 }
 
 export function logout(): void {
+  const session = getSession()
   localStorage.removeItem(SESSION_KEY)
+  if (session?.refreshToken) {
+    void revokeRefreshToken(session.refreshToken)
+  }
+}
+
+async function revokeRefreshToken(refreshToken: string): Promise<void> {
+  try {
+    await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+      keepalive: true,
+    })
+  } catch {
+    // Revocación best-effort: la sesión local ya se limpió.
+  }
 }
 
 export function getSession(): Session | null {

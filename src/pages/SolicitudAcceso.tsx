@@ -93,8 +93,8 @@ function SolicitudAcceso() {
   return (
     <div className="min-h-svh flex flex-col">
       <InstitutionalHeader />
-      <div className="flex-1 grid place-items-center p-6 box-border bg-azul-unam">
-        <main className="w-full max-w-[400px] box-border pt-10 px-8 pb-7 rounded-2xl bg-surface border border-outline shadow-[0_20px_40px_rgba(0,0,0,0.25)]">
+      <div className="flex-1 grid place-items-center p-6 box-border bg-[#ffffff]">
+        <main className="w-full max-w-[400px] box-border pt-10 px-8 pb-7 rounded-2xl bg-[#ffffff] border border-outline shadow-[0_20px_40px_rgba(0,0,0,0.25)]">
           <header className="text-center mb-7">
             <h1 className="m-0 mb-2 text-[26px] tracking-[-0.4px] text-ink">Solicitar acceso</h1>
             <p className="text-[15px]">Completa el formulario para solicitar una cuenta</p>

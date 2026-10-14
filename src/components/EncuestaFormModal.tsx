@@ -10,7 +10,10 @@ import type { UnidadResponsable } from '../services/unidades'
 import { ROLES, type Role } from '../types/auth'
 import { ApiError } from '../types/api'
 
+export type ModoEncuesta = 'crear' | 'editar' | 'duplicar'
+
 interface Props {
+  modo: ModoEncuesta
   encuesta: Encuesta | null
   tipos: TipoEncuesta[]
   unidades: UnidadResponsable[]
@@ -45,6 +48,7 @@ const CLASE_INPUT =
   'focus:outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-bg)]'
 
 function EncuestaFormModal({
+  modo,
   encuesta,
   tipos,
   unidades,
@@ -53,10 +57,13 @@ function EncuestaFormModal({
   onClose,
   onSaved,
 }: Props) {
-  const esEdicion = encuesta !== null
+  const esEdicion = modo === 'editar' && encuesta !== null
+  const esCopia = modo === 'duplicar'
   const esAdminGlobal = rol === ROLES.ADMIN
 
-  const [titulo, setTitulo] = useState(encuesta?.titulo ?? '')
+  const [titulo, setTitulo] = useState(
+    esCopia && encuesta ? `${encuesta.titulo} (copia)` : encuesta?.titulo ?? '',
+  )
   const [idTipo, setIdTipo] = useState(
     encuesta?.tipoEncuesta ? String(encuesta.tipoEncuesta.idTipoEncuesta) : '',
   )
@@ -67,10 +74,14 @@ function EncuestaFormModal({
     aInputDatetime(encuesta?.fechaFinVigencia ?? null),
   )
   const [mostrar, setMostrar] = useState(
-    encuesta ? estaActivo(encuesta.activo) : true,
+    esCopia ? true : encuesta ? estaActivo(encuesta.activo) : true,
   )
   const [idUnidad, setIdUnidad] = useState(
-    idUnidadPredeterminada ? String(idUnidadPredeterminada) : '',
+    encuesta?.unidadResponsable
+      ? String(encuesta.unidadResponsable.idUnidadResponsable)
+      : idUnidadPredeterminada
+        ? String(idUnidadPredeterminada)
+        : '',
   )
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
@@ -190,12 +201,18 @@ function EncuestaFormModal({
       >
         <header className="mb-5">
           <h2 id="form-encuesta-titulo" className="text-ink text-[20px]">
-            {esEdicion ? 'Editar encuesta' : 'Nueva encuesta'}
+            {esEdicion
+              ? 'Editar encuesta'
+              : esCopia
+                ? 'Duplicar encuesta'
+                : 'Nueva encuesta'}
           </h2>
           <p className="mt-1 text-sm opacity-70">
             {esEdicion
               ? 'Modifica los datos generales y la vigencia.'
-              : 'Registra los datos generales de la encuesta.'}
+              : esCopia
+                ? 'Revisa los datos de la copia y guárdala como una encuesta nueva.'
+                : 'Registra los datos generales de la encuesta.'}
           </p>
         </header>
 
@@ -331,7 +348,9 @@ function EncuestaFormModal({
                 ? 'Guardando…'
                 : esEdicion
                   ? 'Guardar cambios'
-                  : 'Crear encuesta'}
+                  : esCopia
+                    ? 'Crear copia'
+                    : 'Crear encuesta'}
             </button>
           </div>
         </form>
