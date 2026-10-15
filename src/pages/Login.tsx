@@ -1,29 +1,50 @@
 import type { FormEvent } from 'react'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import GoogleLoginButton from '../components/GoogleLoginButton'
 import InstitutionalHeader from '../components/InstitutionalHeader'
 import InstitutionalFooter from '../components/InstitutionalFooter'
-import { isAuthenticated, login } from '../services/auth'
+import { isAuthenticated, login, loginGoogle } from '../services/auth'
 
 interface LocationState {
   from?: {
     pathname: string
   }
+  expired?: boolean
 }
+
+const GOOGLE_ENABLED = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID)
 
 function Login() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [email, setEmail] = useState('administrador@cedetec.edu.bo')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  const state = location.state as LocationState | null
+  const from = state?.from?.pathname ?? '/'
+
+  const handleGoogleCredential = useCallback(
+    (idToken: string): void => {
+      setError(null)
+      setSubmitting(true)
+      loginGoogle(idToken)
+        .then(() => navigate(from, { replace: true }))
+        .catch((err) => setError((err as Error).message))
+        .finally(() => setSubmitting(false))
+    },
+    [navigate, from],
+  )
+
+  const handleGoogleError = useCallback((message: string): void => {
+    setError(message)
+  }, [])
+
   if (isAuthenticated()) {
     return <Navigate to="/" replace />
   }
-
-  const from = (location.state as LocationState | null)?.from?.pathname ?? '/'
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
@@ -48,6 +69,15 @@ function Login() {
             <h1 className="m-0 mb-2 text-[26px] tracking-[-0.4px] text-ink">Cuestionario de satisfacción</h1>
             <p className="text-[15px]">Inicia sesión para continuar</p>
           </header>
+
+          {state?.expired && !error && (
+            <p
+              className="m-0 mb-4 px-[14px] py-[10px] rounded-lg text-sm bg-oro-unam/15 text-azul-unam border border-oro-unam dark:text-oro-unam"
+              role="status"
+            >
+              Tu sesión expiró. Vuelve a iniciar sesión.
+            </p>
+          )}
 
           <form className="flex flex-col gap-[18px]" onSubmit={handleSubmit}>
             <label className="flex flex-col gap-[6px] text-sm font-semibold">
@@ -100,9 +130,19 @@ function Login() {
             </button>
           </form>
 
-          <small className="block mt-[22px] text-center text-xs opacity-70">
-            Demo: administrador@cedetec.edu.bo / Admin123!
-          </small>
+          {GOOGLE_ENABLED && (
+            <>
+              <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.14em] opacity-60">
+                <span className="h-px flex-1 bg-outline" />
+                o
+                <span className="h-px flex-1 bg-outline" />
+              </div>
+              <GoogleLoginButton
+                onCredential={handleGoogleCredential}
+                onError={handleGoogleError}
+              />
+            </>
+          )}
 
           <p className="mt-6 text-center text-sm">
             ¿Aún no tienes cuenta? <Link to="/solicitar-acceso" className="text-accent hover:underline font-medium">Solicitar acceso</Link>

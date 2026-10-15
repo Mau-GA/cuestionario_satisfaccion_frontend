@@ -1,4 +1,10 @@
-import { getSession, hasTokenExpired, logout, refreshSession } from './auth'
+import {
+  getSession,
+  hasTokenExpired,
+  logout,
+  refreshSession,
+  type RefreshResult,
+} from './auth'
 import { ApiError, serverMessage } from '../types/api'
 import { API_BASE_URL } from './config'
 
@@ -10,13 +16,21 @@ interface RequestOptions {
   auth?: boolean
 }
 
-let refreshing: Promise<boolean> | null = null
+let refreshing: Promise<RefreshResult> | null = null
 
-function refetchSession(): Promise<boolean> {
+function refetchSession(): Promise<RefreshResult> {
   refreshing ??= refreshSession().finally(() => {
     refreshing = null
   })
   return refreshing
+}
+
+function dispatchUnauthorized(sourceRefreshToken: string | null): void {
+  window.dispatchEvent(
+    new CustomEvent(UNAUTHORIZED_EVENT, {
+      detail: { refreshToken: sourceRefreshToken },
+    }),
+  )
 }
 
 async function request<T>(
@@ -27,13 +41,17 @@ async function request<T>(
   const requireAuth = options.auth ?? true
 
   let session = getSession()
+  const sourceRefreshToken = session?.refreshToken ?? null
 
   if (requireAuth) {
     if (!session?.token || hasTokenExpired(session)) {
-      const refreshed = await refetchSession()
-      if (!refreshed) {
+      const result = await refetchSession()
+      if (result === 'network') {
+        throw new ApiError('No se pudo conectar con el servidor', 0)
+      }
+      if (result !== 'ok') {
         logout()
-        window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+        dispatchUnauthorized(sourceRefreshToken)
         throw new ApiError('La sesión ha expirado. Vuelve a iniciar sesión.', 401)
       }
       session = getSession()
@@ -62,10 +80,13 @@ async function request<T>(
   let body = await readBody(response)
 
   if (requireAuth && response.status === 401 && session?.refreshToken) {
-    const refreshed = await refetchSession()
-    if (!refreshed) {
+    const result = await refetchSession()
+    if (result === 'network') {
+      throw new ApiError('No se pudo conectar con el servidor', 0)
+    }
+    if (result !== 'ok') {
       logout()
-      window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+      dispatchUnauthorized(sourceRefreshToken)
       throw new ApiError(serverMessage(body), 401)
     }
     try {
@@ -86,7 +107,7 @@ async function request<T>(
 
   if (requireAuth && response.status === 401) {
     logout()
-    window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+    dispatchUnauthorized(sourceRefreshToken)
     throw new ApiError(serverMessage(body), 401)
   }
 
