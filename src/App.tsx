@@ -1,10 +1,12 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Route, Routes, useNavigate, Navigate } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
 import { UNAUTHORIZED_EVENT } from './services/http'
 import { getSession, logout } from './services/auth'
 import { ROLES } from './types/auth'
-import Admin from './pages/Admin'
+import AdminDashboard from './pages/AdminDashboard'
+import UsersPage from './pages/UsersPage'
+import UnidadesPage from './pages/UnidadesPage'
 import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -61,11 +63,16 @@ function App() {
           path="/admin"
           element={
             <ProtectedRoute roles={[ROLES.ADMIN]}>
-              <Admin />
+              <AdminDashboard />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<Navigate to="usuarios" replace />} />
+          <Route path="usuarios" element={<UsersPage />} />
+          <Route path="unidades" element={<UnidadesPage />} />
+        </Route>
         <Route path="*" element={<NoEncontrado />} />
+
       </Routes>
     </BrowserRouter>
   )
