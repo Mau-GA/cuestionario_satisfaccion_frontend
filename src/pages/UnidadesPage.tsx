@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { listUnidades, createUnidad, updateUnidad, deleteUnidad, toggleUnidadActive } from '../services/unidades'
 
 function UnidadesPage() {
@@ -7,7 +7,9 @@ function UnidadesPage() {
   const [error, setError] = useState<string | null>(null)
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 })
   const [search, setSearch] = useState('')
-  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null)
+  // Cada carga lleva un número; solo se aplica la respuesta de la más reciente,
+  // para que una petición lenta con una búsqueda vieja no pise a la nueva.
+  const ultimaCarga = useRef(0)
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingUnidad, setEditingUnidad] = useState<{ idUnidadResponsable: number; nombre: string; activo: boolean; fechaCreacion: string } | null>(null)
@@ -18,17 +20,20 @@ function UnidadesPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
 
   const fetchUnidades = useCallback(async () => {
+    const carga = ++ultimaCarga.current
     setLoading(true)
     setError(null)
     try {
       const params = { page: pagination.page, limit: pagination.limit, search: search || undefined }
       const res = await listUnidades(params)
+      if (carga !== ultimaCarga.current) return
       setUnidades(res.data)
       setPagination(prev => ({ ...prev, total: res.total, totalPages: res.totalPages }))
     } catch (err) {
+      if (carga !== ultimaCarga.current) return
       setError(err instanceof Error ? err.message : 'Error cargando unidades')
     } finally {
-      setLoading(false)
+      if (carga === ultimaCarga.current) setLoading(false)
     }
   }, [pagination.page, search, pagination.limit])
 
@@ -36,14 +41,6 @@ function UnidadesPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchUnidades()
   }, [fetchUnidades])
-
-  function debouncedFetch() {
-    if (searchTimeout) clearTimeout(searchTimeout)
-    setSearchTimeout(setTimeout(() => {
-      setPagination(prev => ({ ...prev, page: 1 }))
-      fetchUnidades()
-    }, 300))
-  }
 
   function openCreateModal() {
     setEditingUnidad(null)
@@ -147,7 +144,7 @@ function UnidadesPage() {
                 type="text"
                 placeholder="Buscar por nombre..."
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); debouncedFetch() }}
+                onChange={(e) => { setSearch(e.target.value); setPagination(prev => ({ ...prev, page: 1 })) }}
                 className="w-full px-3 py-2 border border-outline rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-azul-unam"
               />
             </div>

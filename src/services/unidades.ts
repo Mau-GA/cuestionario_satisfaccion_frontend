@@ -9,13 +9,29 @@ export async function listUnidades(params: {
   search?: string
   activo?: boolean
 } = {}): Promise<PaginatedResponse<UnidadResponsable>> {
-  const searchParams = new URLSearchParams()
-  if (params.page) searchParams.set('page', String(params.page))
-  if (params.limit) searchParams.set('limit', String(params.limit))
-  if (params.search) searchParams.set('search', params.search)
-  if (params.activo !== undefined) searchParams.set('activo', String(params.activo))
+  // Backend devuelve array directo CA_UnidadesResponsables[] sin filtros ni
+  // paginación, y activo como tinyint (1/0): todo eso se resuelve en frontend
+  const respuesta = await http.request<(Omit<UnidadResponsable, 'activo'> & { activo: boolean | number })[]>(
+    BASE,
+    { method: 'GET' },
+  )
+  const termino = params.search?.trim().toLowerCase()
+  const todas = respuesta
+    .map(u => ({ ...u, activo: u.activo === true || u.activo === 1 }))
+    .filter(u => !termino || u.nombre.toLowerCase().includes(termino))
+    .filter(u => params.activo === undefined || u.activo === params.activo)
 
-  return http.request<PaginatedResponse<UnidadResponsable>>(`${BASE}?${searchParams.toString()}`, { method: 'GET' })
+  const page = params.page ?? 1
+  const limit = params.limit ?? 10
+  const start = (page - 1) * limit
+
+  return {
+    data: todas.slice(start, start + limit),
+    total: todas.length,
+    page,
+    limit,
+    totalPages: Math.ceil(todas.length / limit),
+  }
 }
 
 export async function listUnidadesActivas(): Promise<UnidadResponsable[]> {

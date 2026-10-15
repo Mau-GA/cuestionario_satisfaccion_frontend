@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { listUsers, createUser, updateUser, deleteUser, toggleUserActive } from '../services/users'
 import { listUnidadesActivas } from '../services/unidades'
-import type { User, CreateUserData } from '../types/admin'
+import type { User, CreateUserData, UpdateUserData } from '../types/admin'
 
 function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -9,7 +9,9 @@ function UsersPage() {
   const [error, setError] = useState<string | null>(null)
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 })
   const [search, setSearch] = useState('')
-  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null)
+  // Cada carga lleva un número; solo se aplica la respuesta de la más reciente,
+  // para que una petición lenta con una búsqueda vieja no pise a la nueva.
+  const ultimaCarga = useRef(0)
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
@@ -18,13 +20,13 @@ function UsersPage() {
     contrasena: string
     activo: boolean
     idUnidadResponsable: string
-    idRel: string
+    idRol: string
   }>({
     correoElectronico: '',
     contrasena: '',
     activo: true,
     idUnidadResponsable: '',
-    idRel: '',
+    idRol: '',
   })
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -34,17 +36,20 @@ function UsersPage() {
   const [unidades, setUnidades] = useState<{ idUnidadResponsable: number; nombre: string }[]>([])
 
   const fetchUsers = useCallback(async () => {
+    const carga = ++ultimaCarga.current
     setLoading(true)
     setError(null)
     try {
       const params = { page: pagination.page, limit: pagination.limit, search: search || undefined }
       const res = await listUsers(params)
+      if (carga !== ultimaCarga.current) return
       setUsers(res.data)
       setPagination(prev => ({ ...prev, total: res.total, totalPages: res.totalPages }))
     } catch (err) {
+      if (carga !== ultimaCarga.current) return
       setError(err instanceof Error ? err.message : 'Error cargando usuarios')
     } finally {
-      setLoading(false)
+      if (carga === ultimaCarga.current) setLoading(false)
     }
   }, [pagination.page, search, pagination.limit])
 
@@ -69,7 +74,7 @@ function UsersPage() {
 
   function openCreateModal() {
     setEditingUser(null)
-    setFormData({ correoElectronico: '', contrasena: '', activo: true, idUnidadResponsable: '', idRel: '' })
+    setFormData({ correoElectronico: '', contrasena: '', activo: true, idUnidadResponsable: '', idRol: '' })
     setFormError(null)
     setModalOpen(true)
   }
@@ -81,7 +86,7 @@ function UsersPage() {
       contrasena: '',
       activo: user.activo,
       idUnidadResponsable: String(user.idUnidadResponsable ?? ''),
-      idRel: String(user.idRol ?? ''),
+      idRol: String(user.idRol ?? ''),
     })
     setFormError(null)
     setModalOpen(true)
@@ -110,12 +115,12 @@ function UsersPage() {
     }
 
     try {
-      const data = {
+      const data: UpdateUserData = {
         correoElectronico: formData.correoElectronico.trim(),
-        contrasena: formData.contrasena || undefined,
+        contraseña: formData.contrasena || undefined,
         activo: formData.activo,
         idUnidadResponsable: formData.idUnidadResponsable ? Number(formData.idUnidadResponsable) : undefined,
-        idRel: formData.idRel ? Number(formData.idRel) : undefined,
+        idRol: formData.idRol ? Number(formData.idRol) : undefined,
       }
 
       if (editingUser) {
@@ -186,7 +191,7 @@ function UsersPage() {
                 type="text"
                 placeholder="Buscar por correo..."
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); if (searchTimeout) clearTimeout(searchTimeout); setSearchTimeout(setTimeout(() => { setPagination(prev => ({ ...prev, page: 1 })); fetchUsers(); }, 300)) }}
+                onChange={(e) => { setSearch(e.target.value); setPagination(prev => ({ ...prev, page: 1 })) }}
                 className="w-full px-3 py-2 border border-outline rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-azul-unam"
               />
             </div>
@@ -219,7 +224,7 @@ function UsersPage() {
                   <tr key={user.idUsuario} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm text-ink">{user.correoElectronico}</td>
                     <td className="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">
-                      {user.unidadResponsable?.nombre ?? '—'}
+                      {unidades.find(u => u.idUnidadResponsable === user.idUnidadResponsable)?.nombre ?? '—'}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">
                       {user.rol?.rol ?? '—'}
@@ -351,8 +356,8 @@ function UsersPage() {
               <div>
                 <label className="block text-sm font-medium text-ink mb-1">Rol</label>
                 <select
-                  value={formData.idRel}
-                  onChange={e => setFormData(prev => ({ ...prev, idRel: e.target.value }))}
+                  value={formData.idRol}
+                  onChange={e => setFormData(prev => ({ ...prev, idRol: e.target.value }))}
                   className="w-full px-3 py-2 border border-outline rounded-lg focus:outline-none focus:ring-2 focus:ring-azul-unam"
                 >
                   <option value="">Sin asignar</option>

@@ -1,13 +1,11 @@
 export interface User {
   idUsuario: number;
   correoElectronico: string;
-  contrasena?: string | null;
   activo: boolean;
   fechaCreacion: string;
   fechaUltimaModificacion: string | null;
   idUnidadResponsable: number | null;
   idRol: number | null;
-  unidadResponsable?: UnidadResponsable;
   rol?: Role;
 }
 
@@ -42,22 +40,22 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+// Los nombres son los de CreateUserDto/UpdateUserDto del backend, que valida con
+// forbidNonWhitelisted: cualquier otro nombre responde 400. La contraseña lleva ñ.
 export interface CreateUserData {
   correoElectronico: string;
-  contrasena: string;
+  contraseña: string;
   activo?: boolean;
   idUnidadResponsable?: number;
-  idRel?: number;
-  idrel?: number;
+  idRol?: number;
 }
 
 export interface UpdateUserData {
   correoElectronico?: string;
-  contrasena?: string;
+  contraseña?: string;
   activo?: boolean;
   idUnidadResponsable?: number;
-  idRel?: number;
-  idrel?: number;
+  idRol?: number;
 }
 
 export interface CreateUnidadData {

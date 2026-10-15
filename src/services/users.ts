@@ -1,47 +1,30 @@
 import { http } from './http'
-import type { User, PaginatedResponse, UserListParams } from '../types/admin'
+import type {
+  User,
+  PaginatedResponse,
+  UserListParams,
+  CreateUserData,
+  UpdateUserData,
+} from '../types/admin'
 
 const BASE = '/usuarios'
 
+// Forma real de TB_Usuario en el backend: el id va en minúscula (idusuario),
+// la contraseña nunca viaja (@Exclude) y el rol llega anidado, sin idRol plano.
+// La unidad solo llega como idUnidadResponsable, sin la relación.
+// activo es un tinyint y puede llegar como 1/0.
 interface BackendUser {
-  idUsuario: number
+  idusuario: number
   correoElectronico: string
-  contrasena: string | null
-  activo: boolean
+  activo: boolean | number
   fechaCreacion: string
   fechaUltimaModificacion: string | null
   idUnidadResponsable: number | null
-  idRol: number | null
-  unidadResponsable?: { idUnidadResponsable: number; nombre: string }
-  rol?: { idRol: number; rol: string }
+  rol?: { idRol: number; rol: string; activo: boolean | number; fechaCreacion: string } | null
 }
 
-interface CreateUserPayload {
-  correoElectronico: string
-  contrasena: string
-  activo?: boolean
-  idUnidadResponsable?: number
-  idRel?: number
-  idrel?: number
-}
-
-interface UpdateUserPayload {
-  correoElectronico?: string
-  contrasena?: string
-  activo?: boolean
-  idUnidadResponsable?: number
-  idRel?: number
-  idrel?: number
-}
-
-function toUnidadResponsable(bu: BackendUser['unidadResponsable']): User['unidadResponsable'] {
-  if (!bu) return undefined
-  return {
-    idUnidadResponsable: bu.idUnidadResponsable,
-    nombre: bu.nombre,
-    activo: true,
-    fechaCreacion: new Date().toISOString(),
-  }
+function esActivo(valor: boolean | number): boolean {
+  return valor === true || valor === 1
 }
 
 function toRole(bu: BackendUser['rol']): User['rol'] {
@@ -49,22 +32,20 @@ function toRole(bu: BackendUser['rol']): User['rol'] {
   return {
     idRol: bu.idRol,
     rol: bu.rol,
-    activo: true,
-    fechaCreacion: new Date().toISOString(),
+    activo: esActivo(bu.activo),
+    fechaCreacion: bu.fechaCreacion,
   }
 }
 
 function toUser(bu: BackendUser): User {
   return {
-    idUsuario: bu.idUsuario,
+    idUsuario: bu.idusuario,
     correoElectronico: bu.correoElectronico,
-    contrasena: bu.contrasena,
-    activo: bu.activo,
+    activo: esActivo(bu.activo),
     fechaCreacion: bu.fechaCreacion,
     fechaUltimaModificacion: bu.fechaUltimaModificacion,
     idUnidadResponsable: bu.idUnidadResponsable,
-    idRol: bu.idRol,
-    unidadResponsable: toUnidadResponsable(bu.unidadResponsable),
+    idRol: bu.rol?.idRol ?? null,
     rol: toRole(bu.rol),
   }
 }
@@ -78,8 +59,13 @@ export async function listUsers(params: UserListParams = {}): Promise<PaginatedR
   if (params.idUnidadResponsable) searchParams.set('idUnidadResponsable', String(params.idUnidadResponsable))
   if (params.idRol) searchParams.set('idRol', String(params.idRol))
 
-  // Backend devuelve array directo TB_Usuario[], hacemos paginación en frontend
-  const allUsers = await http.request<BackendUser[]>(`${BASE}?${searchParams.toString()}`, { method: 'GET' })
+  // Backend devuelve array directo TB_Usuario[] e ignora los filtros, así que
+  // la búsqueda y la paginación se hacen en frontend
+  const respuesta = await http.request<BackendUser[]>(`${BASE}?${searchParams.toString()}`, { method: 'GET' })
+  const termino = params.search?.trim().toLowerCase()
+  const allUsers = termino
+    ? respuesta.filter(u => u.correoElectronico.toLowerCase().includes(termino))
+    : respuesta
 
   const page = params.page ?? 1
   const limit = params.limit ?? 10
@@ -101,12 +87,12 @@ export async function getUser(id: number): Promise<User> {
   return toUser(bu)
 }
 
-export async function createUser(data: CreateUserPayload): Promise<User> {
+export async function createUser(data: CreateUserData): Promise<User> {
   const bu = await http.request<BackendUser>(BASE, { method: 'POST', body: data })
   return toUser(bu)
 }
 
-export async function updateUser(id: number, data: UpdateUserPayload): Promise<User> {
+export async function updateUser(id: number, data: UpdateUserData): Promise<User> {
   const bu = await http.request<BackendUser>(`${BASE}/${id}`, { method: 'PATCH', body: data })
   return toUser(bu)
 }
