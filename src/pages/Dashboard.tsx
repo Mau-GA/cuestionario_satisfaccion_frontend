@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import AppLayout from '../components/AppLayout'
 import EstadoBadge from '../components/EstadoBadge'
 import EncuestaFormModal from '../components/EncuestaFormModal'
+import EncuestaDetalleModal from '../components/EncuestaDetalleModal'
 import { getSession } from '../services/auth'
 import {
   accionesPorEstado,
@@ -28,6 +29,7 @@ const CLASE_INPUT =
   'focus:outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-bg)]'
 
 const LABEL_ACCION: Record<AccionEncuesta, string> = {
+  ver: 'Ver',
   editar: 'Editar',
   duplicar: 'Duplicar',
   cerrar: 'Cerrar',
@@ -35,17 +37,15 @@ const LABEL_ACCION: Record<AccionEncuesta, string> = {
 }
 
 const ESTILO_ACCION: Record<AccionEncuesta, string> = {
+  ver: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   editar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   duplicar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   cerrar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
-  eliminar:
-    'bg-oro-unam text-azul-unam border-oro-unam hover:brightness-110',
+  eliminar: 'bg-oro-unam text-azul-unam border-oro-unam hover:brightness-110',
 }
 
 type FormEncuesta =
-  | { modo: 'crear' }
-  | { modo: 'editar' | 'duplicar'; encuesta: Encuesta }
-  | null
+  { modo: 'crear' } | { modo: 'editar' | 'duplicar'; encuesta: Encuesta } | null
 
 function formatFecha(iso: string | null): string {
   if (!iso) return '—'
@@ -79,6 +79,7 @@ function Dashboard() {
     'todas',
   )
   const [formAbierto, setFormAbierto] = useState<FormEncuesta>(null)
+  const [detalle, setDetalle] = useState<Encuesta | null>(null)
   const [tipos, setTipos] = useState<TipoEncuesta[]>([])
   const [unidades, setUnidades] = useState<UnidadResponsable[]>([])
   const [procesando, setProcesando] = useState<number | null>(null)
@@ -161,9 +162,7 @@ function Dashboard() {
     <AppLayout>
       <section className="bg-surface border border-outline rounded-xl shadow-[0_4px_12px_rgba(0,61,121,0.08)] p-7">
         <h1 className="text-ink">Encuestas de mi unidad</h1>
-        <p className="mt-1">
-          Bienvenido, {session?.user.correoElectronico}
-        </p>
+        <p className="mt-1">Bienvenido, {session?.user.correoElectronico}</p>
 
         <ul className="list-none m-0 mt-4 p-0 flex flex-wrap gap-x-5 gap-y-2">
           {ESTADOS.map((estado) => (
@@ -281,7 +280,9 @@ function Dashboard() {
                                 type="button"
                                 disabled={bloqueada}
                                 onClick={() => {
-                                  if (accion === 'editar') {
+                                  if (accion === 'ver') {
+                                    setDetalle(encuesta)
+                                  } else if (accion === 'editar') {
                                     setFormAbierto({
                                       modo: 'editar',
                                       encuesta,
@@ -317,6 +318,13 @@ function Dashboard() {
           </p>
         ) : null}
       </section>
+
+      {detalle && (
+        <EncuestaDetalleModal
+          encuesta={detalle}
+          onClose={() => setDetalle(null)}
+        />
+      )}
 
       {formAbierto && (
         <EncuestaFormModal
