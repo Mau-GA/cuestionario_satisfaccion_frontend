@@ -58,6 +58,51 @@ export interface UpdateUserData {
   idRol?: number;
 }
 
+export type SolicitudEstado = 'pendiente' | 'aprobada' | 'rechazada';
+
+// El backend calcula `estado` desde `autorizada` (null -> pendiente,
+// true -> aprobada, false -> rechazada). usuarioRevision trae solo
+// idusuario y correoElectronico (addSelect del servicio).
+export interface SolicitudAcceso {
+  idSolicitudAcceso: number;
+  correoElectronico: string;
+  autorizada: boolean | null;
+  estado: SolicitudEstado;
+  motivosRechazo: string | null;
+  fechaSolicitud: string;
+  fechaRevision: string | null;
+  usuarioRevision: {
+    idusuario: number;
+    correoElectronico: string;
+  } | null;
+  unidad: UnidadResponsable | null;
+}
+
+// Nombres exactos de FiltroSolicitudesDto del backend
+// (forbidNonWhitelisted: cualquier otro nombre responde 400).
+export interface SolicitudAccesoParams {
+  estado?: SolicitudEstado;
+  correo?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface AprobarSolicitudResponse {
+  mensaje: string;
+  solicitud: {
+    idSolicitudAcceso: number;
+    estado: SolicitudEstado;
+    fechaRevision: string | null;
+  };
+  usuario: {
+    idusuario: number;
+    correoElectronico: string;
+    activo: boolean;
+    idUnidadResponsable: number;
+    rol: string;
+  };
+}
+
 export interface CreateUnidadData {
   nombre: string;
   activo?: boolean;

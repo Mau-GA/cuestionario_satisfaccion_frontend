@@ -14,8 +14,9 @@ export default function AdminDashboard() {
   }
 
   const tabs = [
-    { path: '/admin/usuarios', label: 'Usuarios' },
-    { path: '/admin/unidades', label: 'Unidades Responsables' },
+    { path: '/admin/usuarios', label: 'Usuarios', icono: '👥' },
+    { path: '/admin/unidades', label: 'Unidades Responsables', icono: '🏢' },
+    { path: '/admin/solicitudes', label: 'Solicitudes de acceso', icono: '📥' },
   ]
 
   return (
@@ -33,7 +34,7 @@ export default function AdminDashboard() {
                 to={tab.path}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname === tab.path ? 'bg-azul-unam text-white' : 'text-ink hover:bg-azul-unam/10'}`}
               >
-                {tab.label === 'Usuarios' ? '👥' : '🏢'}
+                {tab.icono}
                 <span>{tab.label}</span>
               </Link>
             ))}
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
             >
               <option value="/admin/usuarios">Usuarios</option>
               <option value="/admin/unidades">Unidades Responsables</option>
+              <option value="/admin/solicitudes">Solicitudes de acceso</option>
             </select>
           </header>
           <main className="p-4 lg:p-6">

@@ -7,6 +7,7 @@ import { ROLES } from './types/auth'
 import AdminDashboard from './pages/AdminDashboard'
 import UsersPage from './pages/UsersPage'
 import UnidadesPage from './pages/UnidadesPage'
+import SolicitudesPage from './pages/SolicitudesPage'
 import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -70,6 +71,7 @@ function App() {
           <Route index element={<Navigate to="usuarios" replace />} />
           <Route path="usuarios" element={<UsersPage />} />
           <Route path="unidades" element={<UnidadesPage />} />
+          <Route path="solicitudes" element={<SolicitudesPage />} />
         </Route>
         <Route path="*" element={<NoEncontrado />} />
 
