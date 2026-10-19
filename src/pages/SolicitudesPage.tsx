@@ -4,6 +4,9 @@ import type { SolicitudAcceso, SolicitudEstado } from '../types/admin'
 
 const LIMITE_PAGINA = 10
 const LIMITE_MOTIVO = 500
+// El rol no se elige: el backend lo fija al aprobar (solicitudes-acceso.service.ts)
+// y también toma la unidad de la propia solicitud. Aquí solo se muestra en la confirmación.
+const ROL_ASIGNADO_AL_APROBAR = 'Administrador de encuestas'
 
 type FiltroEstado = 'todas' | SolicitudEstado
 
@@ -39,6 +42,7 @@ function SolicitudesPage() {
 
   const [detalle, setDetalle] = useState<SolicitudAcceso | null>(null)
   const [motivo, setMotivo] = useState('')
+  const [confirmandoAprobar, setConfirmandoAprobar] = useState(false)
   const [accionError, setAccionError] = useState<string | null>(null)
   const [enviandoAccion, setEnviandoAccion] = useState(false)
 
@@ -72,12 +76,14 @@ function SolicitudesPage() {
   function abrirDetalle(solicitud: SolicitudAcceso) {
     setDetalle(solicitud)
     setMotivo('')
+    setConfirmandoAprobar(false)
     setAccionError(null)
   }
 
   function cerrarDetalle() {
     setDetalle(null)
     setMotivo('')
+    setConfirmandoAprobar(false)
     setAccionError(null)
   }
 
@@ -278,46 +284,87 @@ function SolicitudesPage() {
                 </div>
               </dl>
 
-              {accionError && (
-                <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm" role="alert">
-                  {accionError}
-                </div>
-              )}
-
               {detalle.estado === 'pendiente' ? (
                 <div className="pt-2 space-y-3">
-                  <div>
-                    <label htmlFor="motivo-rechazo" className="block text-sm font-medium text-ink mb-1">
-                      Motivo del rechazo (solo si se rechaza, máx. {LIMITE_MOTIVO} caracteres)
-                    </label>
-                    <textarea
-                      id="motivo-rechazo"
-                      value={motivo}
-                      onChange={(e) => setMotivo(e.target.value.slice(0, LIMITE_MOTIVO))}
-                      rows={3}
-                      maxLength={LIMITE_MOTIVO}
-                      placeholder="La solicitud no cumple con los requisitos"
-                      className="w-full px-3 py-2 border border-outline rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-azul-unam"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={handleRechazar}
-                      disabled={enviandoAccion || !motivo.trim()}
-                      className="px-4 py-2 border border-red-200 text-red-700 rounded-lg hover:bg-red-50 disabled:opacity-50"
-                    >
-                      {enviandoAccion ? 'Enviando...' : 'Rechazar'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleAprobar}
-                      disabled={enviandoAccion}
-                      className="px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 disabled:opacity-50"
-                    >
-                      {enviandoAccion ? 'Enviando...' : 'Aprobar'}
-                    </button>
-                  </div>
+                  {accionError && (
+                    <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm" role="alert">
+                      {accionError}
+                    </div>
+                  )}
+
+                  {confirmandoAprobar ? (
+                    <div className="rounded-lg border border-outline p-4 space-y-4">
+                      <h3 className="text-base font-semibold text-ink">
+                        ¿Aprobar solicitud de {detalle.correoElectronico}?
+                      </h3>
+                      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Unidad a asignar</dt>
+                          <dd className="text-sm text-ink mt-1">{detalle.unidad?.nombre ?? '—'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Rol a asignar</dt>
+                          <dd className="text-sm text-ink mt-1">{ROL_ASIGNADO_AL_APROBAR}</dd>
+                        </div>
+                      </dl>
+                      <p className="text-sm text-gray-500">
+                        Se dará de alta al usuario con estos datos y podrá entrar al sistema.
+                      </p>
+                      <div className="flex justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setConfirmandoAprobar(false)}
+                          disabled={enviandoAccion}
+                          className="px-4 py-2 border border-outline rounded-lg text-ink hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleAprobar}
+                          disabled={enviandoAccion}
+                          className="px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 disabled:opacity-50"
+                        >
+                          {enviandoAccion ? 'Enviando...' : 'Confirmar aprobación'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <label htmlFor="motivo-rechazo" className="block text-sm font-medium text-ink mb-1">
+                          Motivo del rechazo (solo si se rechaza, máx. {LIMITE_MOTIVO} caracteres)
+                        </label>
+                        <textarea
+                          id="motivo-rechazo"
+                          value={motivo}
+                          onChange={(e) => setMotivo(e.target.value.slice(0, LIMITE_MOTIVO))}
+                          rows={3}
+                          maxLength={LIMITE_MOTIVO}
+                          placeholder="La solicitud no cumple con los requisitos"
+                          className="w-full px-3 py-2 border border-outline rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-azul-unam"
+                        />
+                      </div>
+                      <div className="flex justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={handleRechazar}
+                          disabled={enviandoAccion || !motivo.trim()}
+                          className="px-4 py-2 border border-red-200 text-red-700 rounded-lg hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {enviandoAccion ? 'Enviando...' : 'Rechazar'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmandoAprobar(true)}
+                          disabled={enviandoAccion}
+                          className="px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 disabled:opacity-50"
+                        >
+                          {enviandoAccion ? 'Enviando...' : 'Aprobar'}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-gray-500 pt-2">
