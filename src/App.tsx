@@ -1,5 +1,11 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Route, Routes, useNavigate, Navigate } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  useNavigate,
+  Navigate,
+} from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
 import { UNAUTHORIZED_EVENT } from './services/http'
 import { getSession, logout } from './services/auth'
@@ -14,6 +20,7 @@ import Login from './pages/Login'
 import NoEncontrado from './pages/NoEncontrado'
 import SinAcceso from './pages/SinAcceso'
 import SolicitudAcceso from './pages/SolicitudAcceso'
+import ResponderEncuesta from './pages/ResponderEncuesta'
 
 function SessionWatcher() {
   const navigate = useNavigate()
@@ -36,8 +43,7 @@ function SessionWatcher() {
     }
 
     window.addEventListener(UNAUTHORIZED_EVENT, onUnauthorized)
-    return () =>
-      window.removeEventListener(UNAUTHORIZED_EVENT, onUnauthorized)
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, onUnauthorized)
   }, [navigate])
 
   return null
@@ -51,6 +57,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/solicitar-acceso" element={<SolicitudAcceso />} />
+        <Route path="/responder/:token" element={<ResponderEncuesta />} />
         <Route path="/sin-acceso" element={<SinAcceso />} />
         <Route
           path="/dashboard"
@@ -74,7 +81,6 @@ function App() {
           <Route path="solicitudes" element={<SolicitudesPage />} />
         </Route>
         <Route path="*" element={<NoEncontrado />} />
-
       </Routes>
     </BrowserRouter>
   )
