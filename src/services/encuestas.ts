@@ -62,7 +62,7 @@ export interface UpdateEncuestaDto {
   activo?: boolean
 }
 
-function esActivo(valor: boolean | number): boolean {
+export function esActivo(valor: boolean | number): boolean {
   return valor === true || valor === 1
 }
 
@@ -123,7 +123,18 @@ export function actualizarEncuesta(
   })
 }
 
-export function cerrarEncuesta(idEncuesta: number): Promise<void> {
+// Cierra de verdad: adelanta el fin de la vigencia a este momento (BE-26).
+// No toca `activo` ni borra la encuesta, al contrario de eliminarEncuesta().
+export function cerrarEncuesta(idEncuesta: number): Promise<Encuesta> {
+  return http.request<Encuesta>(`/encuestas/${idEncuesta}/cerrar`, {
+    method: 'POST',
+  })
+}
+
+// Baja logica: solo apaga `activo`, sin tocar la vigencia. Es para un
+// borrador que nunca se publico; una encuesta ya abierta se cierra con
+// cerrarEncuesta(), no se elimina.
+export function eliminarEncuesta(idEncuesta: number): Promise<void> {
   return http.request<void>(`/encuestas/${idEncuesta}`, { method: 'DELETE' })
 }
 
