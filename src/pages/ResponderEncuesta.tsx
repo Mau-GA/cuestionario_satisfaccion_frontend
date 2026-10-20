@@ -68,6 +68,13 @@ function Aviso({ titulo, children }: { titulo: string; children: ReactNode }) {
 
 function ResponderEncuesta() {
   const { token = '' } = useParams()
+  // key={token} fuerza un remount completo al cambiar de encuesta por
+  // navegación cliente (sin recarga), para que el estado de la anterior
+  // nunca se le quede pegado a la nueva.
+  return <ResponderEncuestaDeToken key={token} token={token} />
+}
+
+function ResponderEncuestaDeToken({ token }: { token: string }) {
   const [estado, setEstado] = useState<Estado>(() =>
     yaRespondida(token) ? { fase: 'respondida' } : { fase: 'cargando' },
   )
