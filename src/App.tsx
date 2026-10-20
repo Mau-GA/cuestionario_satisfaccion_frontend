@@ -18,6 +18,7 @@ import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import NoEncontrado from './pages/NoEncontrado'
+import Resultados from './pages/Resultados'
 import SinAcceso from './pages/SinAcceso'
 import SolicitudAcceso from './pages/SolicitudAcceso'
 import ResponderEncuesta from './pages/ResponderEncuesta'
@@ -64,6 +65,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/encuestas/:id/resultados"
+          element={
+            <ProtectedRoute>
+              <Resultados />
             </ProtectedRoute>
           }
         />

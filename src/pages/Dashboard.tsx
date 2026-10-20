@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import EstadoBadge from '../components/EstadoBadge'
 import EncuestaFormModal from '../components/EncuestaFormModal'
@@ -71,6 +72,7 @@ function getErrorMessage(err: unknown): string {
 
 function Dashboard() {
   const session = getSession()
+  const navigate = useNavigate()
   const [encuestas, setEncuestas] = useState<Encuesta[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -268,41 +270,46 @@ function Dashboard() {
                         {formatVigencia(encuesta)}
                       </td>
                       <td className="py-3 text-right">
-                        {acciones.length === 0 ? (
-                          <span className="text-xs opacity-50">
-                            Sin acciones
-                          </span>
-                        ) : (
-                          <div className="inline-flex flex-wrap justify-end gap-2">
-                            {acciones.map((accion) => (
-                              <button
-                                key={accion}
-                                type="button"
-                                disabled={bloqueada}
-                                onClick={() => {
-                                  if (accion === 'ver') {
-                                    setDetalle(encuesta)
-                                  } else if (accion === 'editar') {
-                                    setFormAbierto({
-                                      modo: 'editar',
-                                      encuesta,
-                                    })
-                                  } else if (accion === 'duplicar') {
-                                    setFormAbierto({
-                                      modo: 'duplicar',
-                                      encuesta,
-                                    })
-                                  } else {
-                                    void handleCerrar(encuesta, accion)
-                                  }
-                                }}
-                                className={`text-[13px] font-bold rounded-lg border bg-transparent cursor-pointer px-3 py-1.5 transition-colors disabled:opacity-50 ${ESTILO_ACCION[accion]}`}
-                              >
-                                {LABEL_ACCION[accion]}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                        <div className="inline-flex flex-wrap justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              navigate(
+                                `/dashboard/encuestas/${encuesta.idEncuesta}/resultados`,
+                              )
+                            }
+                            className="text-[13px] font-bold rounded-lg border border-azul-unam text-azul-unam bg-transparent cursor-pointer px-3 py-1.5 transition-colors hover:bg-accent-soft"
+                          >
+                            Resultados
+                          </button>
+                          {acciones.map((accion) => (
+                            <button
+                              key={accion}
+                              type="button"
+                              disabled={bloqueada}
+                              onClick={() => {
+                                if (accion === 'ver') {
+                                  setDetalle(encuesta)
+                                } else if (accion === 'editar') {
+                                  setFormAbierto({
+                                    modo: 'editar',
+                                    encuesta,
+                                  })
+                                } else if (accion === 'duplicar') {
+                                  setFormAbierto({
+                                    modo: 'duplicar',
+                                    encuesta,
+                                  })
+                                } else {
+                                  void handleCerrar(encuesta, accion)
+                                }
+                              }}
+                              className={`text-[13px] font-bold rounded-lg border bg-transparent cursor-pointer px-3 py-1.5 transition-colors disabled:opacity-50 ${ESTILO_ACCION[accion]}`}
+                            >
+                              {LABEL_ACCION[accion]}
+                            </button>
+                          ))}
+                        </div>
                       </td>
                     </tr>
                   )
