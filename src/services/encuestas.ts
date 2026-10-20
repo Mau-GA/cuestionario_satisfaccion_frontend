@@ -138,6 +138,15 @@ export function eliminarEncuesta(idEncuesta: number): Promise<void> {
   return http.request<void>(`/encuestas/${idEncuesta}`, { method: 'DELETE' })
 }
 
+// Copia la encuesta en el backend (BE-25): preguntas y opciones incluidas,
+// renumeradas desde 1, sin las que usan un tipo de respuesta dado de baja.
+// La copia nace en borrador, sin vigencia y con " (copia)" en el titulo.
+export function duplicarEncuesta(idEncuesta: number): Promise<Encuesta> {
+  return http.request<Encuesta>(`/encuestas/${idEncuesta}/duplicar`, {
+    method: 'POST',
+  })
+}
+
 export function publicarEncuesta(
   idEncuesta: number,
   visibleEnInicio: boolean,
