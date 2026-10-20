@@ -8,6 +8,8 @@ import {
   accionesPorEstado,
   calcularEstado,
   cerrarEncuesta,
+  eliminarEncuesta,
+  esActivo,
   publicarEncuesta,
   ESTADOS,
   ESTADO_LABEL,
@@ -90,7 +92,10 @@ function Dashboard() {
   const cargar = useCallback((): void => {
     listEncuestas()
       .then((data) => {
-        setEncuestas(data)
+        // Una encuesta eliminada (de baja, activo=false) ya no se muestra:
+        // una "cerrada" de verdad conserva activo=true, solo se le adelanta
+        // la vigencia (cerrarEncuesta), asi que esto no oculta ninguna real.
+        setEncuestas(data.filter((encuesta) => esActivo(encuesta.activo)))
         setError(null)
       })
       .catch((err) => setError(getErrorMessage(err)))
@@ -172,7 +177,11 @@ function Dashboard() {
     setProcesando(encuesta.idEncuesta)
     setError(null)
     try {
-      await cerrarEncuesta(encuesta.idEncuesta)
+      if (accion === 'eliminar') {
+        await eliminarEncuesta(encuesta.idEncuesta)
+      } else {
+        await cerrarEncuesta(encuesta.idEncuesta)
+      }
       setLoading(true)
       cargar()
     } catch (err) {
