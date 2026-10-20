@@ -17,6 +17,10 @@ export default function AdminDashboard() {
     { path: '/admin/usuarios', label: 'Usuarios', icono: '👥' },
     { path: '/admin/unidades', label: 'Unidades Responsables', icono: '🏢' },
     { path: '/admin/solicitudes', label: 'Solicitudes de acceso', icono: '📥' },
+    { path: '/admin/catalogos/preguntas', label: 'Preguntas', icono: '❓' },
+    { path: '/admin/catalogos/opciones', label: 'Opciones', icono: '🏷️' },
+    { path: '/admin/catalogos/tipos-encuesta', label: 'Tipos de encuesta', icono: '📋' },
+    { path: '/admin/catalogos/tipos-respuesta', label: 'Tipos de respuesta', icono: '⭐' },
   ]
 
   return (
@@ -40,7 +44,7 @@ export default function AdminDashboard() {
             ))}
           </nav>
         </aside>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <header className="lg:hidden p-4 border-b border-outline bg-surface">
             <select
               value={location.pathname}
@@ -50,6 +54,10 @@ export default function AdminDashboard() {
               <option value="/admin/usuarios">Usuarios</option>
               <option value="/admin/unidades">Unidades Responsables</option>
               <option value="/admin/solicitudes">Solicitudes de acceso</option>
+              <option value="/admin/catalogos/preguntas">Preguntas</option>
+              <option value="/admin/catalogos/opciones">Opciones</option>
+              <option value="/admin/catalogos/tipos-encuesta">Tipos de encuesta</option>
+              <option value="/admin/catalogos/tipos-respuesta">Tipos de respuesta</option>
             </select>
           </header>
           <main className="p-4 lg:p-6">

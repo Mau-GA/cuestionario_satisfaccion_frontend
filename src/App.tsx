@@ -14,6 +14,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import UsersPage from './pages/UsersPage'
 import UnidadesPage from './pages/UnidadesPage'
 import SolicitudesPage from './pages/SolicitudesPage'
+import CatalogosPage from './pages/CatalogosPage'
 import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -88,6 +89,10 @@ function App() {
           <Route path="usuarios" element={<UsersPage />} />
           <Route path="unidades" element={<UnidadesPage />} />
           <Route path="solicitudes" element={<SolicitudesPage />} />
+          <Route path="catalogos/preguntas" element={<CatalogosPage catalogo="preguntas" />} />
+          <Route path="catalogos/opciones" element={<CatalogosPage catalogo="opciones" />} />
+          <Route path="catalogos/tipos-encuesta" element={<CatalogosPage catalogo="tipos-encuesta" />} />
+          <Route path="catalogos/tipos-respuesta" element={<CatalogosPage catalogo="tipos-respuesta" />} />
         </Route>
         <Route path="*" element={<NoEncontrado />} />
       </Routes>

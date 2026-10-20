@@ -9,6 +9,10 @@ import {
   accionesPorEstado,
   calcularEstado,
   cerrarEncuesta,
+  duplicarEncuesta,
+  eliminarEncuesta,
+  esActivo,
+  publicarEncuesta,
   ESTADOS,
   ESTADO_LABEL,
   listEncuestas,
@@ -33,6 +37,7 @@ const LABEL_ACCION: Record<AccionEncuesta, string> = {
   ver: 'Ver',
   editar: 'Editar',
   duplicar: 'Duplicar',
+  publicar: 'Publicar',
   cerrar: 'Cerrar',
   eliminar: 'Eliminar',
 }
@@ -41,12 +46,13 @@ const ESTILO_ACCION: Record<AccionEncuesta, string> = {
   ver: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   editar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   duplicar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
+  publicar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   cerrar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   eliminar: 'bg-oro-unam text-azul-unam border-oro-unam hover:brightness-110',
 }
 
 type FormEncuesta =
-  { modo: 'crear' } | { modo: 'editar' | 'duplicar'; encuesta: Encuesta } | null
+  { modo: 'crear' } | { modo: 'editar'; encuesta: Encuesta } | null
 
 function formatFecha(iso: string | null): string {
   if (!iso) return '—'
@@ -89,7 +95,10 @@ function Dashboard() {
   const cargar = useCallback((): void => {
     listEncuestas()
       .then((data) => {
-        setEncuestas(data)
+        // Una encuesta eliminada (de baja, activo=false) ya no se muestra:
+        // una "cerrada" de verdad conserva activo=true, solo se le adelanta
+        // la vigencia (cerrarEncuesta), asi que esto no oculta ninguna real.
+        setEncuestas(data.filter((encuesta) => esActivo(encuesta.activo)))
         setError(null)
       })
       .catch((err) => setError(getErrorMessage(err)))
@@ -136,6 +145,42 @@ function Dashboard() {
     return conteo
   }, [encuestas])
 
+  async function handlePublicar(encuesta: Encuesta): Promise<void> {
+    if (!window.confirm(`¿Publicar «${encuesta.titulo}»? Se generará su enlace público.`)) {
+      return
+    }
+    const visibleEnInicio = window.confirm(
+      '¿Mostrarla también en la pantalla de inicio pública? Aceptar para sí, cancelar para que quede solo con enlace directo.',
+    )
+
+    setProcesando(encuesta.idEncuesta)
+    setError(null)
+    try {
+      await publicarEncuesta(encuesta.idEncuesta, visibleEnInicio)
+      setLoading(true)
+      cargar()
+    } catch (err) {
+      setError(getErrorMessage(err))
+    } finally {
+      setProcesando(null)
+    }
+  }
+
+  async function handleDuplicar(encuesta: Encuesta): Promise<void> {
+    setProcesando(encuesta.idEncuesta)
+    setError(null)
+    try {
+      const copia = await duplicarEncuesta(encuesta.idEncuesta)
+      setLoading(true)
+      cargar()
+      setFormAbierto({ modo: 'editar', encuesta: copia })
+    } catch (err) {
+      setError(getErrorMessage(err))
+    } finally {
+      setProcesando(null)
+    }
+  }
+
   async function handleCerrar(
     encuesta: Encuesta,
     accion: AccionEncuesta,
@@ -150,7 +195,11 @@ function Dashboard() {
     setProcesando(encuesta.idEncuesta)
     setError(null)
     try {
-      await cerrarEncuesta(encuesta.idEncuesta)
+      if (accion === 'eliminar') {
+        await eliminarEncuesta(encuesta.idEncuesta)
+      } else {
+        await cerrarEncuesta(encuesta.idEncuesta)
+      }
       setLoading(true)
       cargar()
     } catch (err) {
@@ -247,7 +296,10 @@ function Dashboard() {
               <tbody>
                 {visibles.map((encuesta) => {
                   const estado = calcularEstado(encuesta)
-                  const acciones = accionesPorEstado(estado)
+                  const acciones = accionesPorEstado(
+                    estado,
+                    Boolean(encuesta.tokenPublico),
+                  )
                   const bloqueada = procesando === encuesta.idEncuesta
                   return (
                     <tr
@@ -296,10 +348,9 @@ function Dashboard() {
                                     encuesta,
                                   })
                                 } else if (accion === 'duplicar') {
-                                  setFormAbierto({
-                                    modo: 'duplicar',
-                                    encuesta,
-                                  })
+                                  void handleDuplicar(encuesta)
+                                } else if (accion === 'publicar') {
+                                  void handlePublicar(encuesta)
                                 } else {
                                   void handleCerrar(encuesta, accion)
                                 }

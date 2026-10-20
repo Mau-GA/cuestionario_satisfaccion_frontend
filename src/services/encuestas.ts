@@ -3,7 +3,7 @@ import { http } from './http'
 export type EstadoEncuesta = 'borrador' | 'programada' | 'abierta' | 'cerrada'
 
 export type AccionEncuesta =
-  'ver' | 'editar' | 'duplicar' | 'cerrar' | 'eliminar'
+  'ver' | 'editar' | 'duplicar' | 'publicar' | 'cerrar' | 'eliminar'
 
 export const ESTADOS: EstadoEncuesta[] = [
   'borrador',
@@ -38,6 +38,8 @@ export interface Encuesta {
   unidadResponsable: UnidadEncuesta | null
   fechaInicioVigencia: string | null
   fechaFinVigencia: string | null
+  visibleEnInicio: boolean | number
+  tokenPublico: string | null
   activo: boolean | number
   fechaCreacion: string
   fechaUltimaModificacion: string | null
@@ -60,7 +62,7 @@ export interface UpdateEncuestaDto {
   activo?: boolean
 }
 
-function esActivo(valor: boolean | number): boolean {
+export function esActivo(valor: boolean | number): boolean {
   return valor === true || valor === 1
 }
 
@@ -81,14 +83,19 @@ export function calcularEstado(encuesta: Encuesta): EstadoEncuesta {
   return 'abierta'
 }
 
-export function accionesPorEstado(estado: EstadoEncuesta): AccionEncuesta[] {
+export function accionesPorEstado(
+  estado: EstadoEncuesta,
+  tieneEnlace = true,
+): AccionEncuesta[] {
   switch (estado) {
     case 'borrador':
-      return ['editar', 'duplicar', 'eliminar']
+      return ['editar', 'duplicar', 'publicar', 'eliminar']
     case 'programada':
-      return ['editar', 'duplicar', 'cerrar']
+      return ['editar', 'duplicar', 'publicar', 'cerrar']
     case 'abierta':
-      return ['ver', 'duplicar', 'cerrar']
+      return tieneEnlace
+        ? ['ver', 'duplicar', 'cerrar']
+        : ['ver', 'duplicar', 'publicar', 'cerrar']
     case 'cerrada':
       return ['ver', 'duplicar']
   }
@@ -116,6 +123,36 @@ export function actualizarEncuesta(
   })
 }
 
-export function cerrarEncuesta(idEncuesta: number): Promise<void> {
+// Cierra de verdad: adelanta el fin de la vigencia a este momento (BE-26).
+// No toca `activo` ni borra la encuesta, al contrario de eliminarEncuesta().
+export function cerrarEncuesta(idEncuesta: number): Promise<Encuesta> {
+  return http.request<Encuesta>(`/encuestas/${idEncuesta}/cerrar`, {
+    method: 'POST',
+  })
+}
+
+// Baja logica: solo apaga `activo`, sin tocar la vigencia. Es para un
+// borrador que nunca se publico; una encuesta ya abierta se cierra con
+// cerrarEncuesta(), no se elimina.
+export function eliminarEncuesta(idEncuesta: number): Promise<void> {
   return http.request<void>(`/encuestas/${idEncuesta}`, { method: 'DELETE' })
+}
+
+// Copia la encuesta en el backend (BE-25): preguntas y opciones incluidas,
+// renumeradas desde 1, sin las que usan un tipo de respuesta dado de baja.
+// La copia nace en borrador, sin vigencia y con " (copia)" en el titulo.
+export function duplicarEncuesta(idEncuesta: number): Promise<Encuesta> {
+  return http.request<Encuesta>(`/encuestas/${idEncuesta}/duplicar`, {
+    method: 'POST',
+  })
+}
+
+export function publicarEncuesta(
+  idEncuesta: number,
+  visibleEnInicio: boolean,
+): Promise<Encuesta> {
+  return http.request<Encuesta>(`/encuestas/${idEncuesta}/publicar`, {
+    method: 'POST',
+    body: { visibleEnInicio },
+  })
 }
