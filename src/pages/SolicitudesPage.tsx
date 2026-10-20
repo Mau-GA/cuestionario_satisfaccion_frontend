@@ -59,7 +59,12 @@ function SolicitudesPage() {
       })
       if (carga !== ultimaCarga.current) return
       setSolicitudes(res.data)
-      setPagination(prev => ({ ...prev, total: res.total, totalPages: res.totalPages }))
+      setPagination(prev => ({
+        ...prev,
+        page: res.totalPages > 0 ? Math.min(prev.page, res.totalPages) : 1,
+        total: res.total,
+        totalPages: res.totalPages,
+      }))
     } catch (err) {
       if (carga !== ultimaCarga.current) return
       setError(err instanceof Error ? err.message : 'Error cargando solicitudes')
