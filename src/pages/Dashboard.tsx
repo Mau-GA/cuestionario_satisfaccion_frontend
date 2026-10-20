@@ -8,6 +8,7 @@ import {
   accionesPorEstado,
   calcularEstado,
   cerrarEncuesta,
+  publicarEncuesta,
   ESTADOS,
   ESTADO_LABEL,
   listEncuestas,
@@ -32,6 +33,7 @@ const LABEL_ACCION: Record<AccionEncuesta, string> = {
   ver: 'Ver',
   editar: 'Editar',
   duplicar: 'Duplicar',
+  publicar: 'Publicar',
   cerrar: 'Cerrar',
   eliminar: 'Eliminar',
 }
@@ -40,6 +42,7 @@ const ESTILO_ACCION: Record<AccionEncuesta, string> = {
   ver: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   editar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   duplicar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
+  publicar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   cerrar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   eliminar: 'bg-oro-unam text-azul-unam border-oro-unam hover:brightness-110',
 }
@@ -133,6 +136,27 @@ function Dashboard() {
     })
     return conteo
   }, [encuestas])
+
+  async function handlePublicar(encuesta: Encuesta): Promise<void> {
+    if (!window.confirm(`¿Publicar «${encuesta.titulo}»? Se generará su enlace público.`)) {
+      return
+    }
+    const visibleEnInicio = window.confirm(
+      '¿Mostrarla también en la pantalla de inicio pública? Aceptar para sí, cancelar para que quede solo con enlace directo.',
+    )
+
+    setProcesando(encuesta.idEncuesta)
+    setError(null)
+    try {
+      await publicarEncuesta(encuesta.idEncuesta, visibleEnInicio)
+      setLoading(true)
+      cargar()
+    } catch (err) {
+      setError(getErrorMessage(err))
+    } finally {
+      setProcesando(null)
+    }
+  }
 
   async function handleCerrar(
     encuesta: Encuesta,
@@ -245,7 +269,10 @@ function Dashboard() {
               <tbody>
                 {visibles.map((encuesta) => {
                   const estado = calcularEstado(encuesta)
-                  const acciones = accionesPorEstado(estado)
+                  const acciones = accionesPorEstado(
+                    estado,
+                    Boolean(encuesta.tokenPublico),
+                  )
                   const bloqueada = procesando === encuesta.idEncuesta
                   return (
                     <tr
@@ -292,6 +319,8 @@ function Dashboard() {
                                       modo: 'duplicar',
                                       encuesta,
                                     })
+                                  } else if (accion === 'publicar') {
+                                    void handlePublicar(encuesta)
                                   } else {
                                     void handleCerrar(encuesta, accion)
                                   }
