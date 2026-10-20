@@ -3,7 +3,7 @@ import { http } from './http'
 export type EstadoEncuesta = 'borrador' | 'programada' | 'abierta' | 'cerrada'
 
 export type AccionEncuesta =
-  'ver' | 'editar' | 'duplicar' | 'cerrar' | 'eliminar'
+  'ver' | 'editar' | 'duplicar' | 'publicar' | 'cerrar' | 'eliminar'
 
 export const ESTADOS: EstadoEncuesta[] = [
   'borrador',
@@ -38,6 +38,8 @@ export interface Encuesta {
   unidadResponsable: UnidadEncuesta | null
   fechaInicioVigencia: string | null
   fechaFinVigencia: string | null
+  visibleEnInicio: boolean | number
+  tokenPublico: string | null
   activo: boolean | number
   fechaCreacion: string
   fechaUltimaModificacion: string | null
@@ -81,14 +83,19 @@ export function calcularEstado(encuesta: Encuesta): EstadoEncuesta {
   return 'abierta'
 }
 
-export function accionesPorEstado(estado: EstadoEncuesta): AccionEncuesta[] {
+export function accionesPorEstado(
+  estado: EstadoEncuesta,
+  tieneEnlace = true,
+): AccionEncuesta[] {
   switch (estado) {
     case 'borrador':
-      return ['editar', 'duplicar', 'eliminar']
+      return ['editar', 'duplicar', 'publicar', 'eliminar']
     case 'programada':
-      return ['editar', 'duplicar', 'cerrar']
+      return ['editar', 'duplicar', 'publicar', 'cerrar']
     case 'abierta':
-      return ['ver', 'duplicar', 'cerrar']
+      return tieneEnlace
+        ? ['ver', 'duplicar', 'cerrar']
+        : ['ver', 'duplicar', 'publicar', 'cerrar']
     case 'cerrada':
       return ['ver', 'duplicar']
   }
@@ -118,4 +125,14 @@ export function actualizarEncuesta(
 
 export function cerrarEncuesta(idEncuesta: number): Promise<void> {
   return http.request<void>(`/encuestas/${idEncuesta}`, { method: 'DELETE' })
+}
+
+export function publicarEncuesta(
+  idEncuesta: number,
+  visibleEnInicio: boolean,
+): Promise<Encuesta> {
+  return http.request<Encuesta>(`/encuestas/${idEncuesta}/publicar`, {
+    method: 'POST',
+    body: { visibleEnInicio },
+  })
 }
