@@ -44,7 +44,7 @@ export default function AdminDashboard() {
             ))}
           </nav>
         </aside>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <header className="lg:hidden p-4 border-b border-outline bg-surface">
             <select
               value={location.pathname}
