@@ -8,6 +8,7 @@ import {
   accionesPorEstado,
   calcularEstado,
   cerrarEncuesta,
+  duplicarEncuesta,
   eliminarEncuesta,
   esActivo,
   publicarEncuesta,
@@ -50,7 +51,7 @@ const ESTILO_ACCION: Record<AccionEncuesta, string> = {
 }
 
 type FormEncuesta =
-  { modo: 'crear' } | { modo: 'editar' | 'duplicar'; encuesta: Encuesta } | null
+  { modo: 'crear' } | { modo: 'editar'; encuesta: Encuesta } | null
 
 function formatFecha(iso: string | null): string {
   if (!iso) return '—'
@@ -156,6 +157,21 @@ function Dashboard() {
       await publicarEncuesta(encuesta.idEncuesta, visibleEnInicio)
       setLoading(true)
       cargar()
+    } catch (err) {
+      setError(getErrorMessage(err))
+    } finally {
+      setProcesando(null)
+    }
+  }
+
+  async function handleDuplicar(encuesta: Encuesta): Promise<void> {
+    setProcesando(encuesta.idEncuesta)
+    setError(null)
+    try {
+      const copia = await duplicarEncuesta(encuesta.idEncuesta)
+      setLoading(true)
+      cargar()
+      setFormAbierto({ modo: 'editar', encuesta: copia })
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {
@@ -324,10 +340,7 @@ function Dashboard() {
                                       encuesta,
                                     })
                                   } else if (accion === 'duplicar') {
-                                    setFormAbierto({
-                                      modo: 'duplicar',
-                                      encuesta,
-                                    })
+                                    void handleDuplicar(encuesta)
                                   } else if (accion === 'publicar') {
                                     void handlePublicar(encuesta)
                                   } else {
