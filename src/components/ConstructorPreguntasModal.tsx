@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  agregarOpcionEncuesta,
   agregarPreguntaEncuesta,
+  cambiarTipoRespuestaEncuesta,
+  listarOpcionesEncuesta,
   listarPreguntasEncuesta,
+  quitarOpcionEncuesta,
   quitarPreguntaEncuesta,
   reordenarPreguntasEncuesta,
   type PreguntaEncuesta,
 } from '../services/armado'
-import { listPreguntasActivas, listTiposRespuestaActivos } from '../services/catalogos'
+import {
+  listOpcionesActivas,
+  listPreguntasActivas,
+  listTiposRespuestaActivos,
+} from '../services/catalogos'
 import type { Encuesta } from '../services/encuestas'
 import { calcularEstado } from '../services/encuestas'
+import type { Opcion } from '../types/catalogos'
 import { ApiError } from '../types/api'
 
 const CLASE_INPUT =
@@ -39,6 +48,16 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
 
   const [quitarId, setQuitarId] = useState<PreguntaEncuesta | null>(null)
   const [quitando, setQuitando] = useState(false)
+
+  // Tipo y opciones por pregunta (FE-17 / BE-23): panel por fila, cacheado
+  // por idEncuestaPregunta. El texto ('texto') es la única respuesta abierta.
+  const [abiertaId, setAbiertaId] = useState<number | null>(null)
+  const [opcionesPorPregunta, setOpcionesPorPregunta] = useState<Record<number, Opcion[]>>({})
+  const [cargandoOpciones, setCargandoOpciones] = useState(false)
+  const [catalogoOpciones, setCatalogoOpciones] = useState<Opcion[]>([])
+  const [idOpcionSel, setIdOpcionSel] = useState('')
+  const [editandoOpciones, setEditandoOpciones] = useState(false)
+  const [editandoTipo, setEditandoTipo] = useState(false)
 
   // Reordenar arrastrando: durante el arrastre solo se reordena en pantalla;
   // el PUT salta al soltar (dragEnd cubre también el drop fuera del modal).
@@ -87,6 +106,9 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
         ),
       )
       .catch(() => setTiposRespuesta([]))
+    listOpcionesActivas()
+      .then((lista) => setCatalogoOpciones(lista))
+      .catch(() => setCatalogoOpciones([]))
   }, [cargar])
 
   useEffect(() => {
@@ -144,6 +166,123 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
       setError(err instanceof ApiError ? err.message : 'Error inesperado')
     } finally {
       setQuitando(false)
+    }
+  }
+
+  // BE-23: el backend agrupa por tipo cerrado; solo 'texto' es respuesta
+  // abierta, y las tres variantes cerradas (caritas, estrellas, barra)
+  // comparten el mismo manejo de opciones.
+  const textoTipo = 'texto'
+  const esAbierta = (tipo: string): boolean => tipo === textoTipo
+
+  function alternarPanel(item: PreguntaEncuesta): void {
+    const abriendo = abiertaId !== item.idEncuestaPregunta
+    setAbiertaId(abriendo ? item.idEncuestaPregunta : null)
+    setIdOpcionSel('')
+    if (abriendo && !esAbierta(item.tipoRespuesta.tipoRespuesta)) {
+      void cargarOpciones(item)
+    }
+  }
+
+  async function cargarOpciones(item: PreguntaEncuesta): Promise<void> {
+    setCargandoOpciones(true)
+    try {
+      const res = await listarOpcionesEncuesta(
+        encuesta.idEncuesta,
+        item.idEncuestaPregunta,
+      )
+      setOpcionesPorPregunta((prev) => ({ ...prev, [item.idEncuestaPregunta]: res }))
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Error inesperado')
+    } finally {
+      setCargandoOpciones(false)
+    }
+  }
+
+  async function handleCambiarTipo(
+    item: PreguntaEncuesta,
+    valor: string,
+  ): Promise<void> {
+    if (!valor) return
+    const idTipoRespuesta = Number(valor)
+    if (idTipoRespuesta === item.tipoRespuesta.idTipoRespuesta) return
+
+    setEditandoTipo(true)
+    setError(null)
+    setAviso(null)
+    try {
+      // La fila devuelta reemplaza la anterior en la misma posición.
+      const fila = await cambiarTipoRespuestaEncuesta(
+        encuesta.idEncuesta,
+        item.idEncuestaPregunta,
+        idTipoRespuesta,
+      )
+      setItems((prev) =>
+        prev.map((x) => (x.idEncuestaPregunta === fila.idEncuestaPregunta ? fila : x)),
+      )
+      // La caché de opciones queda obsoleta con el tipo nuevo; se descarta y
+      // se vuelve a cargar si el tipo nuevo es cerrado.
+      setOpcionesPorPregunta((prev) => {
+        const copia = { ...prev }
+        delete copia[item.idEncuestaPregunta]
+        return copia
+      })
+      setIdOpcionSel('')
+      if (!esAbierta(fila.tipoRespuesta.tipoRespuesta)) await cargarOpciones(fila)
+      setAviso(`Tipo actualizado a «${fila.tipoRespuesta.tipoRespuesta}».`)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Error inesperado')
+    } finally {
+      setEditandoTipo(false)
+    }
+  }
+
+  async function handleAgregarOpcion(item: PreguntaEncuesta): Promise<void> {
+    if (!idOpcionSel) return
+    setError(null)
+    setAviso(null)
+    setEditandoOpciones(true)
+    try {
+      const res = await agregarOpcionEncuesta(
+        encuesta.idEncuesta,
+        item.idEncuestaPregunta,
+        Number(idOpcionSel),
+      )
+      setOpcionesPorPregunta((prev) => ({
+        ...prev,
+        [item.idEncuestaPregunta]: res,
+      }))
+      setIdOpcionSel('')
+      setAviso('Opción agregada a la pregunta.')
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Error inesperado')
+    } finally {
+      setEditandoOpciones(false)
+    }
+  }
+
+  async function handleQuitarOpcion(
+    item: PreguntaEncuesta,
+    idOpcion: number,
+  ): Promise<void> {
+    setError(null)
+    setAviso(null)
+    setEditandoOpciones(true)
+    try {
+      const res = await quitarOpcionEncuesta(
+        encuesta.idEncuesta,
+        item.idEncuestaPregunta,
+        idOpcion,
+      )
+      setOpcionesPorPregunta((prev) => ({
+        ...prev,
+        [item.idEncuestaPregunta]: res,
+      }))
+      setAviso('Opción quitada de la pregunta.')
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Error inesperado')
+    } finally {
+      setEditandoOpciones(false)
     }
   }
 
@@ -223,7 +362,9 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
           </h2>
           <p className="mt-1 text-sm opacity-70">
             {encuesta.titulo}. Agrega preguntas del catálogo, quítalas y
-            reordénalas arrastrando; el orden se guarda automáticamente.
+            reordénalas arrastrando; el orden se guarda automáticamente. En cada
+            pregunta eliges su tipo de respuesta y armas sus opciones: cada tipo
+            muestra su configuración y las cerradas siempre conservan opciones.
           </p>
         </header>
 
@@ -262,7 +403,24 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
           </p>
         ) : (
           <ol className="m-0 mt-1 mb-1 p-0 list-none flex flex-col gap-2">
-            {items.map((item, indice) => (
+            {items.map((item, indice) => {
+              const panelAbierto = abiertaId === item.idEncuestaPregunta
+              const esCerrada = !esAbierta(item.tipoRespuesta.tipoRespuesta)
+              const opcionesFila = opcionesPorPregunta[item.idEncuestaPregunta] ?? []
+              // El tipo guardado puede estar inactivo (fuera del catálogo de
+              // activos); se conserva como opción del select para no perderlo.
+              const tiposSelect = tiposRespuesta.some(
+                (t) => t.idTipoRespuesta === item.tipoRespuesta.idTipoRespuesta,
+              )
+                ? tiposRespuesta
+                : [
+                    ...tiposRespuesta,
+                    {
+                      idTipoRespuesta: item.tipoRespuesta.idTipoRespuesta,
+                      tipoRespuesta: item.tipoRespuesta.tipoRespuesta,
+                    },
+                  ]
+              return (
               <li
                 key={item.idEncuestaPregunta}
                 draggable={editable}
@@ -272,53 +430,235 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
                   if (enArrastre) event.preventDefault()
                 }}
                 onDragEnd={handleDragEnd}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border border-outline bg-ink/2 transition-[background-color,border-color,opacity] duration-150 ${
+                className={`rounded-lg border border-outline bg-ink/2 transition-[background-color,border-color,opacity] duration-150 ${
                   enArrastre ? (indice === arrastando ? 'opacity-60 cursor-grabbing' : 'cursor-grab') : ''
                 }`}
               >
-                <span className="text-xs font-semibold opacity-60 w-6 text-center shrink-0">
-                  {indice + 1}
-                </span>
-                {editable && (
-                  <span
-                    className="select-none text-lg opacity-40 cursor-grab"
-                    title="Arrastrar para reordenar"
-                  >
-                    ⠿
+                <div className="flex items-center gap-3 px-3 py-2.5">
+                  <span className="text-xs font-semibold opacity-60 w-6 text-center shrink-0">
+                    {indice + 1}
                   </span>
-                )}
-                <span className="flex-1 min-w-0 text-sm text-ink break-words">
-                  {item.pregunta.pregunta}
-                </span>
-                <span
-                  className="shrink-0 text-xs font-semibold px-2 py-1 rounded-full bg-accent-soft text-azul-unam"
-                  title="Tipo de respuesta"
-                >
-                  {item.tipoRespuesta.tipoRespuesta}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setQuitarId(item)}
-                  disabled={!editable || quitando}
-                  title={editable ? 'Quitar de la encuesta' : 'No editable'}
-                  className="shrink-0 text-red-600 hover:bg-red-100 rounded-lg p-1.5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                  {editable && (
+                    <span
+                      className="select-none text-lg opacity-40 cursor-grab"
+                      title="Arrastrar para reordenar"
+                    >
+                      ⠿
+                    </span>
+                  )}
+                  <span className="flex-1 min-w-0 text-sm text-ink break-words">
+                    {item.pregunta.pregunta}
+                  </span>
+                  <span
+                    className="shrink-0 text-xs font-semibold px-2 py-1 rounded-full bg-accent-soft text-azul-unam"
+                    title="Tipo de respuesta"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
+                    {item.tipoRespuesta.tipoRespuesta}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => alternarPanel(item)}
+                    aria-expanded={panelAbierto}
+                    title={panelAbierto ? 'Ocultar tipo y opciones' : 'Tipo de respuesta y opciones'}
+                    className="shrink-0 text-azul-unam hover:bg-accent-soft rounded-lg p-1.5 transition-colors"
+                  >
+                    <svg
+                      className={`w-4 h-4 transition-transform duration-150 ${panelAbierto ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuitarId(item)}
+                    disabled={!editable || quitando}
+                    title={editable ? 'Quitar de la encuesta' : 'No editable'}
+                    className="shrink-0 text-red-600 hover:bg-red-100 rounded-lg p-1.5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                {panelAbierto && (
+                  <div className="px-3 pb-3 pt-2 border-t border-outline flex flex-col gap-3">
+                    <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
+                      Tipo de respuesta
+                      <select
+                        value={item.tipoRespuesta.idTipoRespuesta}
+                        onChange={(event) => void handleCambiarTipo(item, event.target.value)}
+                        disabled={!editable || editandoTipo}
+                        aria-label="Tipo de respuesta de la pregunta"
+                        className={CLASE_INPUT}
+                      >
+                        {tiposSelect.map((tipo) => (
+                          <option key={tipo.idTipoRespuesta} value={tipo.idTipoRespuesta}>
+                            {tipo.tipoRespuesta}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {esCerrada && (
+                      <div className="flex flex-col gap-2">
+                        <p className="text-sm font-semibold text-ink">Opciones</p>
+                        {cargandoOpciones ? (
+                          <p className="text-sm opacity-70">Cargando opciones…</p>
+                        ) : opcionesFila.length === 0 ? (
+                          <>
+                            <p
+                              className="px-[14px] py-[10px] rounded-lg text-sm bg-oro-unam/15 text-azul-unam border border-oro-unam dark:text-oro-unam"
+                              role="status"
+                            >
+                              A esta pregunta cerrada le falta su configuración: agrega al menos una opción antes de guardarla.
+                            </p>
+                            {editable && (
+                              <div className="flex flex-col min-[420px]:flex-row gap-2">
+                                <select
+                                  value={idOpcionSel}
+                                  onChange={(event) => setIdOpcionSel(event.target.value)}
+                                  aria-label={`Opciones disponibles para ${item.pregunta.pregunta}`}
+                                  className={CLASE_INPUT + ' flex-1 min-w-0'}
+                                >
+                                  <option value="">
+                                    {catalogoOpciones.length === 0
+                                      ? 'No hay opciones en el catálogo'
+                                      : 'Selecciona una opción del catálogo…'}
+                                  </option>
+                                  {catalogoOpciones.map((opcion) => (
+                                    <option key={opcion.idOpcion} value={opcion.idOpcion}>
+                                      {opcion.opcion} (peso {opcion.peso})
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleAgregarOpcion(item)}
+                                  disabled={editandoOpciones || editandoTipo || !idOpcionSel}
+                                  title={
+                                    !idOpcionSel
+                                      ? 'Selecciona una opción primero'
+                                      : 'Agregar la opción a la pregunta'
+                                  }
+                                  className="rounded-lg bg-azul-unam text-white font-bold cursor-pointer px-[18px] py-[10px]
+                                    transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
+                                >
+                                  {editandoOpciones ? 'Agregando…' : 'Agregar opción'}
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <ul className="m-0 p-0 list-none flex flex-wrap gap-2">
+                              {opcionesFila.map((opcion) => (
+                                <li
+                                  key={opcion.idOpcion}
+                                  className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-outline bg-surface text-sm text-ink"
+                                  title={`peso ${opcion.peso}`}
+                                >
+                                  <span className="font-semibold">
+                                    {opcion.opcion}
+                                    <span className="ml-1 font-normal opacity-70">
+                                      (peso {opcion.peso})
+                                    </span>
+                                  </span>
+                                  {editable && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        void handleQuitarOpcion(item, opcion.idOpcion)
+                                      }
+                                      disabled={editandoOpciones || editandoTipo || opcionesFila.length <= 1}
+                                      title={
+                                        opcionesFila.length <= 1
+                                          ? 'La pregunta usa opciones, conserva al menos una'
+                                          : `Quitar la opción ${opcion.opcion}`
+                                      }
+                                      className="text-red-600 hover:bg-red-100 rounded-full p-0.5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M6 18L18 6M6 6l12 12"
+                                        />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                            {editable && (
+                              <div className="flex flex-col min-[420px]:flex-row gap-2">
+                                <select
+                                  value={idOpcionSel}
+                                  onChange={(event) => setIdOpcionSel(event.target.value)}
+                                  aria-label={`Opciones disponibles para ${item.pregunta.pregunta}`}
+                                  className={CLASE_INPUT + ' flex-1 min-w-0'}
+                                >
+                                  <option value="">Selecciona una opción del catálogo…</option>
+                                  {catalogoOpciones
+                                    .filter(
+                                      (opcion) =>
+                                        !opcionesFila.some((asociada) => asociada.idOpcion === opcion.idOpcion),
+                                    )
+                                    .map((opcion) => (
+                                      <option key={opcion.idOpcion} value={opcion.idOpcion}>
+                                        {opcion.opcion} (peso {opcion.peso})
+                                      </option>
+                                    ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleAgregarOpcion(item)}
+                                  disabled={editandoOpciones || editandoTipo || !idOpcionSel}
+                                  title={
+                                    !idOpcionSel
+                                      ? 'Selecciona una opción primero'
+                                      : 'Agregar la opción a la pregunta'
+                                  }
+                                  className="rounded-lg bg-azul-unam text-white font-bold cursor-pointer px-[18px] py-[10px]
+                                    transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
+                                >
+                                  {editandoOpciones ? 'Agregando…' : 'Agregar opción'}
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+                    {esCerrada && !editable && (
+                      <p className="text-xs opacity-70">
+                        La encuesta ya inició: puedes consultar las opciones, pero no cambiarlas.
+                      </p>
+                    )}
+                    {!esCerrada && (
+                      <p className="text-sm opacity-70">
+                        Las preguntas de texto se responden a mano: no llevan opciones.
+                      </p>
+                    )}
+                  </div>
+                )}
               </li>
-            ))}
+              )
+            })}
           </ol>
         )}
 
