@@ -22,6 +22,10 @@ export function listPreguntas(): Promise<Pregunta[]> {
   return http.request<Pregunta[]>('/preguntas')
 }
 
+export function listPreguntasActivas(): Promise<Pregunta[]> {
+  return http.request<Pregunta[]>('/preguntas/activas')
+}
+
 export function createPregunta(data: CreatePreguntaData): Promise<Pregunta> {
   return http.request<Pregunta>('/preguntas', { method: 'POST', body: data })
 }
@@ -68,6 +72,10 @@ export function desactivarTipoEncuesta(id: number): Promise<TipoEncuesta> {
 
 export function listTiposRespuesta(): Promise<TipoRespuesta[]> {
   return http.request<TipoRespuesta[]>('/tipos-respuesta')
+}
+
+export function listTiposRespuestaActivos(): Promise<TipoRespuesta[]> {
+  return http.request<TipoRespuesta[]>('/tipos-respuesta/activos')
 }
 
 export function createTipoRespuesta(data: CreateTipoRespuestaData): Promise<TipoRespuesta> {

@@ -3,7 +3,7 @@ import { http } from './http'
 export type EstadoEncuesta = 'borrador' | 'programada' | 'abierta' | 'cerrada'
 
 export type AccionEncuesta =
-  'ver' | 'editar' | 'duplicar' | 'publicar' | 'cerrar' | 'eliminar'
+  'armar' | 'ver' | 'editar' | 'duplicar' | 'publicar' | 'cerrar' | 'eliminar'
 
 export const ESTADOS: EstadoEncuesta[] = [
   'borrador',
@@ -89,9 +89,9 @@ export function accionesPorEstado(
 ): AccionEncuesta[] {
   switch (estado) {
     case 'borrador':
-      return ['editar', 'duplicar', 'publicar', 'eliminar']
+      return ['armar', 'editar', 'duplicar', 'publicar', 'eliminar']
     case 'programada':
-      return ['editar', 'duplicar', 'publicar', 'cerrar']
+      return ['armar', 'editar', 'duplicar', 'publicar', 'cerrar']
     case 'abierta':
       return tieneEnlace
         ? ['ver', 'duplicar', 'cerrar']
