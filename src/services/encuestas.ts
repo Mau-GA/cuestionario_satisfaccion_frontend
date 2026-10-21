@@ -94,10 +94,10 @@ export function accionesPorEstado(
       return ['armar', 'editar', 'duplicar', 'publicar', 'cerrar']
     case 'abierta':
       return tieneEnlace
-        ? ['ver', 'duplicar', 'cerrar']
-        : ['ver', 'duplicar', 'publicar', 'cerrar']
+        ? ['ver', 'armar', 'duplicar', 'cerrar']
+        : ['ver', 'armar', 'duplicar', 'publicar', 'cerrar']
     case 'cerrada':
-      return ['ver', 'duplicar']
+      return ['ver', 'armar', 'duplicar']
   }
 }
 

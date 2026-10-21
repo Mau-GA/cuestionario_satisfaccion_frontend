@@ -21,6 +21,14 @@ interface ConfigCatalogo {
   // la original no se modifica ni se desactiva (contrato del BE-19).
   versionaAlEditar: boolean
   singular: string
+  // Género gramatical de `singular`, para concordar artículos y adjetivos en
+  // los textos genéricos de la pantalla (pregunta/opción son femeninas; tipo
+  // de encuesta/tipo de respuesta son masculinos).
+  genero: 'f' | 'm'
+}
+
+function concordar(config: ConfigCatalogo, femenino: string, masculino: string): string {
+  return config.genero === 'f' ? femenino : masculino
 }
 
 const CONFIGS: Record<ClaveCatalogo, ConfigCatalogo> = {
@@ -34,6 +42,7 @@ const CONFIGS: Record<ClaveCatalogo, ConfigCatalogo> = {
     conPeso: false,
     versionaAlEditar: true,
     singular: 'pregunta',
+    genero: 'f',
   },
   opciones: {
     titulo: 'Opciones',
@@ -45,6 +54,7 @@ const CONFIGS: Record<ClaveCatalogo, ConfigCatalogo> = {
     conPeso: true,
     versionaAlEditar: true,
     singular: 'opción',
+    genero: 'f',
   },
   'tipos-encuesta': {
     titulo: 'Tipos de encuesta',
@@ -56,6 +66,7 @@ const CONFIGS: Record<ClaveCatalogo, ConfigCatalogo> = {
     conPeso: false,
     versionaAlEditar: false,
     singular: 'tipo de encuesta',
+    genero: 'm',
   },
   'tipos-respuesta': {
     titulo: 'Tipos de respuesta',
@@ -67,6 +78,7 @@ const CONFIGS: Record<ClaveCatalogo, ConfigCatalogo> = {
     conPeso: false,
     versionaAlEditar: false,
     singular: 'tipo de respuesta',
+    genero: 'm',
   },
 }
 
@@ -187,9 +199,16 @@ function CatalogosPage({ catalogo }: { catalogo: ClaveCatalogo }) {
       closeModal()
       if (editingItem && config.versionaAlEditar && idDe(res) !== idDe(editingItem)) {
         // El backend creó un renglón nuevo: la original quedó intacta y activa.
-        setAviso(`Se creó una ${config.singular} nueva e independiente (ID ${idDe(res)}); la original se conserva sin cambios.`)
+        setAviso(
+          `Se creó ${concordar(config, 'una', 'un')} ${config.singular} ${concordar(config, 'nueva', 'nuevo')} e independiente (ID ${idDe(res)}); ${concordar(config, 'la', 'el')} original se conserva sin cambios.`,
+        )
       } else {
-        setAviso(editingItem ? `${config.singular.charAt(0).toUpperCase()}${config.singular.slice(1)} actualizada.` : `${config.singular.charAt(0).toUpperCase()}${config.singular.slice(1)} creada.`)
+        const Sing = `${config.singular.charAt(0).toUpperCase()}${config.singular.slice(1)}`
+        setAviso(
+          editingItem
+            ? `${Sing} ${concordar(config, 'actualizada', 'actualizado')}.`
+            : `${Sing} ${concordar(config, 'creada', 'creado')}.`,
+        )
       }
       fetchItems()
     } catch (err) {
@@ -205,7 +224,9 @@ function CatalogosPage({ catalogo }: { catalogo: ClaveCatalogo }) {
     try {
       await desactivarItemCatalogo(catalogo, idDe(deleteConfirm))
       setDeleteConfirm(null)
-      setAviso(`La ${config.singular} quedó desactivada.`)
+      setAviso(
+        `${concordar(config, 'La', 'El')} ${config.singular} quedó ${concordar(config, 'desactivada', 'desactivado')}.`,
+      )
       fetchItems()
     } catch (err) {
       setDeleteConfirm(null)
@@ -227,7 +248,7 @@ function CatalogosPage({ catalogo }: { catalogo: ClaveCatalogo }) {
           onClick={openCreateModal}
           className="px-4 py-2 bg-azul-unam text-white rounded-lg font-medium hover:bg-azul-unam/90 transition-colors"
         >
-          + Nueva {config.singular}
+          + {concordar(config, 'Nueva', 'Nuevo')} {config.singular}
         </button>
       </div>
 
@@ -329,7 +350,9 @@ function CatalogosPage({ catalogo }: { catalogo: ClaveCatalogo }) {
           <div className="bg-surface rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-outline flex items-center justify-between">
               <h2 className="text-xl font-semibold text-ink">
-                {editingItem ? `Editar ${config.singular}` : `Nueva ${config.singular}`}
+                {editingItem
+                  ? `Editar ${config.singular}`
+                  : `${concordar(config, 'Nueva', 'Nuevo')} ${config.singular}`}
               </h2>
               <button onClick={closeModal} className="p-1 text-gray-400 hover:text-ink rounded-lg hover:bg-gray-100">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -346,7 +369,8 @@ function CatalogosPage({ catalogo }: { catalogo: ClaveCatalogo }) {
 
               {editingItem && config.versionaAlEditar && (
                 <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-sm" role="note">
-                  Al guardar se creará una {config.singular} <strong>nueva e independiente</strong>; la original
+                  Al guardar se creará {concordar(config, 'una', 'un')} {config.singular}{' '}
+                  <strong>{concordar(config, 'nueva', 'nuevo')} e independiente</strong>; {concordar(config, 'la', 'el')} original
                   no se modifica ni se desactiva, para que las encuestas ya aplicadas conserven el texto que la gente leyó.
                 </div>
               )}
@@ -418,7 +442,7 @@ function CatalogosPage({ catalogo }: { catalogo: ClaveCatalogo }) {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-ink mb-2">
-                ¿Desactivar esta {config.singular}?
+                ¿Desactivar {concordar(config, 'esta', 'este')} {config.singular}?
               </h3>
               <p className="text-gray-500 mb-6 break-words">
                 “{textoDe(deleteConfirm, config.campoTexto)}” dejará de estar disponible.

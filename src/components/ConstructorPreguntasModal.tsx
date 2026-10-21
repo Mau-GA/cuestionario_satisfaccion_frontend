@@ -45,6 +45,10 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
   const dragDesde = useRef<number | null>(null)
   const [arrastando, setArrastando] = useState<number | null>(null)
   const ordenOriginal = useRef<number[] | null>(null)
+  // Si se suelta un segundo arrastre antes de que responda el PUT del
+  // primero, solo se aplica la respuesta del más reciente: evita que una
+  // respuesta atrasada pise en pantalla un orden ya desactualizado.
+  const ultimoReorden = useRef(0)
 
   const editable =
     calcularEstado(encuesta) === 'borrador' ||
@@ -182,15 +186,18 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
       return
     }
 
+    const envio = ++ultimoReorden.current
     setError(null)
     setAviso(null)
     try {
       // El PUT devuelve la lista con el orden guardado; si algo falla se
       // recupera el orden real del servidor.
       const res = await reordenarPreguntasEncuesta(encuesta.idEncuesta, nuevo)
+      if (envio !== ultimoReorden.current) return
       setItems(res)
       setAviso('Orden guardado.')
     } catch (err) {
+      if (envio !== ultimoReorden.current) return
       setError(err instanceof ApiError ? err.message : 'Error inesperado')
       await cargar()
     }
