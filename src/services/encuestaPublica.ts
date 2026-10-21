@@ -19,8 +19,10 @@ export async function enviarRespuestas(
   token: string,
   respuestas: RespuestaEnviada[],
 ): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve, 600))
-  console.info('[simulado] respuestas de la encuesta', token, respuestas)
+  await http.request<{ idEncuestaRespondida: number }>(
+    `/encuestas/publicas/${encodeURIComponent(token)}/respuestas`,
+    { method: 'POST', body: { respuestas }, auth: false },
+  )
 }
 
 export function yaRespondida(token: string): boolean {

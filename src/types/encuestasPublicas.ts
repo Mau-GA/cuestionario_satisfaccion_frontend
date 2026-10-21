@@ -26,5 +26,5 @@ export interface EncuestaPublica {
 export interface RespuestaEnviada {
   idEncuestaPregunta: number
   idOpcion?: number
-  texto?: string
+  respuesta?: string
 }
