@@ -42,6 +42,10 @@ export function listOpciones(): Promise<Opcion[]> {
   return http.request<Opcion[]>('/opciones')
 }
 
+export function listOpcionesActivas(): Promise<Opcion[]> {
+  return http.request<Opcion[]>('/opciones/activas')
+}
+
 export function createOpcion(data: CreateOpcionData): Promise<Opcion> {
   return http.request<Opcion>('/opciones', { method: 'POST', body: data })
 }
