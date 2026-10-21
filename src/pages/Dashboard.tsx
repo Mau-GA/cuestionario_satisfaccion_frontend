@@ -4,6 +4,7 @@ import AppLayout from '../components/AppLayout'
 import EstadoBadge from '../components/EstadoBadge'
 import EncuestaFormModal from '../components/EncuestaFormModal'
 import EncuestaDetalleModal from '../components/EncuestaDetalleModal'
+import ConstructorPreguntasModal from '../components/ConstructorPreguntasModal'
 import { getSession } from '../services/auth'
 import {
   accionesPorEstado,
@@ -34,6 +35,7 @@ const CLASE_INPUT =
   'focus:outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-bg)]'
 
 const LABEL_ACCION: Record<AccionEncuesta, string> = {
+  armar: 'Preguntas',
   ver: 'Ver',
   editar: 'Editar',
   duplicar: 'Duplicar',
@@ -43,6 +45,7 @@ const LABEL_ACCION: Record<AccionEncuesta, string> = {
 }
 
 const ESTILO_ACCION: Record<AccionEncuesta, string> = {
+  armar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   ver: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   editar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
   duplicar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
@@ -88,6 +91,7 @@ function Dashboard() {
   )
   const [formAbierto, setFormAbierto] = useState<FormEncuesta>(null)
   const [detalle, setDetalle] = useState<Encuesta | null>(null)
+  const [armarEncuesta, setArmarEncuesta] = useState<Encuesta | null>(null)
   const [tipos, setTipos] = useState<TipoEncuesta[]>([])
   const [unidades, setUnidades] = useState<UnidadResponsable[]>([])
   const [procesando, setProcesando] = useState<number | null>(null)
@@ -351,6 +355,8 @@ function Dashboard() {
                                   void handleDuplicar(encuesta)
                                 } else if (accion === 'publicar') {
                                   void handlePublicar(encuesta)
+                                } else if (accion === 'armar') {
+                                  setArmarEncuesta(encuesta)
                                 } else {
                                   void handleCerrar(encuesta, accion)
                                 }
@@ -381,6 +387,13 @@ function Dashboard() {
         <EncuestaDetalleModal
           encuesta={detalle}
           onClose={() => setDetalle(null)}
+        />
+      )}
+
+      {armarEncuesta && (
+        <ConstructorPreguntasModal
+          encuesta={armarEncuesta}
+          onClose={() => setArmarEncuesta(null)}
         />
       )}
 
