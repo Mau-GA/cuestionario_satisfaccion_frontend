@@ -363,8 +363,7 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
           <p className="mt-1 text-sm opacity-70">
             {encuesta.titulo}. Agrega preguntas del catálogo, quítalas y
             reordénalas arrastrando; el orden se guarda automáticamente. En cada
-            pregunta eliges su tipo de respuesta y armas sus opciones: cada tipo
-            muestra su configuración y las cerradas siempre conservan opciones.
+            pregunta eliges su tipo de respuesta y armas sus opciones.
           </p>
         </header>
 
