@@ -42,8 +42,12 @@ function Login() {
     setError(message)
   }, [])
 
+  // Tras un login exitoso, el finally de handleSubmit cambia submitting y
+  // vuelve a renderizar antes de que surta efecto el navigate(from) de abajo;
+  // isAuthenticated() ya es true en ese re-render, así que este Navigate debe
+  // apuntar a la misma ruta pedida, no a "/", o se la pisa.
   if (isAuthenticated()) {
-    return <Navigate to="/" replace />
+    return <Navigate to={from} replace />
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
