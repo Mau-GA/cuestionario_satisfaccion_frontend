@@ -30,8 +30,12 @@ function idCampo(pregunta: PreguntaPublica): string {
   return `pregunta-${pregunta.idEncuestaPregunta}`
 }
 
-function esObligatoria(pregunta: PreguntaPublica): boolean {
-  return pregunta.tipoRespuesta.tipoRespuesta.trim().toLowerCase() !== 'texto'
+// El backend exige una respuesta para cada pregunta activa de la encuesta,
+// sin excluir las de texto libre (responder-encuesta.service.ts valida que
+// `respuesta` no venga vacío también para el tipo 'texto'), así que aquí
+// todas son obligatorias.
+function esObligatoria(): boolean {
+  return true
 }
 
 function estaVacia(valor: ValorRespuesta | undefined): boolean {
@@ -122,7 +126,7 @@ function ResponderEncuestaDeToken({ token }: { token: string }) {
     const faltantes: Record<number, string> = {}
     for (const pregunta of encuesta.preguntas) {
       if (
-        esObligatoria(pregunta) &&
+        esObligatoria() &&
         estaVacia(valores[pregunta.idEncuestaPregunta])
       ) {
         faltantes[pregunta.idEncuestaPregunta] = 'Esta pregunta es obligatoria.'
@@ -142,21 +146,24 @@ function ResponderEncuestaDeToken({ token }: { token: string }) {
       return
     }
 
-    const respuestas: RespuestaEnviada[] = []
-    for (const pregunta of encuesta.preguntas) {
-      const valor = valores[pregunta.idEncuestaPregunta]
-      if (typeof valor === 'number') {
-        respuestas.push({
+    // Ya se validó arriba que no falta ninguna obligatoria (ahora todas lo
+    // son), así que esto manda una respuesta por cada pregunta activa, como
+    // lo exige el backend.
+    const respuestas: RespuestaEnviada[] = encuesta.preguntas.map(
+      (pregunta) => {
+        const valor = valores[pregunta.idEncuestaPregunta]
+        if (typeof valor === 'number') {
+          return {
+            idEncuestaPregunta: pregunta.idEncuestaPregunta,
+            idOpcion: valor,
+          }
+        }
+        return {
           idEncuestaPregunta: pregunta.idEncuestaPregunta,
-          idOpcion: valor,
-        })
-      } else if (typeof valor === 'string' && valor.trim()) {
-        respuestas.push({
-          idEncuestaPregunta: pregunta.idEncuestaPregunta,
-          texto: valor.trim(),
-        })
-      }
-    }
+          respuesta: typeof valor === 'string' ? valor.trim() : '',
+        }
+      },
+    )
 
     setEnviando(true)
     setErrorEnvio(null)
@@ -239,7 +246,7 @@ function ResponderEncuestaDeToken({ token }: { token: string }) {
                 onChange={(valor) =>
                   cambiarValor(pregunta.idEncuestaPregunta, valor)
                 }
-                requerida={esObligatoria(pregunta)}
+                requerida={esObligatoria()}
                 error={errores[pregunta.idEncuestaPregunta] ?? null}
                 deshabilitado={enviando}
               />
