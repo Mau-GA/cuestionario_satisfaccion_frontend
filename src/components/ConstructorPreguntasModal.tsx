@@ -53,7 +53,8 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
   // por idEncuestaPregunta. El texto ('texto') es la única respuesta abierta.
   const [abiertaId, setAbiertaId] = useState<number | null>(null)
   const [opcionesPorPregunta, setOpcionesPorPregunta] = useState<Record<number, Opcion[]>>({})
-  const [cargandoOpciones, setCargandoOpciones] = useState(false)
+  // Carga de opciones marcada por fila: dos GETs en vuelo no se pisan.
+  const [cargandoOpciones, setCargandoOpciones] = useState<Set<number>>(new Set())
   const [catalogoOpciones, setCatalogoOpciones] = useState<Opcion[]>([])
   const [idOpcionSel, setIdOpcionSel] = useState('')
   const [editandoOpciones, setEditandoOpciones] = useState(false)
@@ -179,23 +180,34 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
     const abriendo = abiertaId !== item.idEncuestaPregunta
     setAbiertaId(abriendo ? item.idEncuestaPregunta : null)
     setIdOpcionSel('')
-    if (abriendo && !esAbierta(item.tipoRespuesta.tipoRespuesta)) {
+    // Cacheadas por idEncuestaPregunta: solo la primera vez dispara el GET.
+    if (
+      abriendo &&
+      !esAbierta(item.tipoRespuesta.tipoRespuesta) &&
+      !opcionesPorPregunta[item.idEncuestaPregunta]
+    ) {
       void cargarOpciones(item)
     }
   }
 
-  async function cargarOpciones(item: PreguntaEncuesta): Promise<void> {
-    setCargandoOpciones(true)
+  async function cargarOpciones(item: PreguntaEncuesta): Promise<boolean> {
+    setCargandoOpciones((prev) => new Set(prev).add(item.idEncuestaPregunta))
     try {
       const res = await listarOpcionesEncuesta(
         encuesta.idEncuesta,
         item.idEncuestaPregunta,
       )
       setOpcionesPorPregunta((prev) => ({ ...prev, [item.idEncuestaPregunta]: res }))
+      return true
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error inesperado')
+      return false
     } finally {
-      setCargandoOpciones(false)
+      setCargandoOpciones((prev) => {
+        const copia = new Set(prev)
+        copia.delete(item.idEncuestaPregunta)
+        return copia
+      })
     }
   }
 
@@ -228,7 +240,12 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
         return copia
       })
       setIdOpcionSel('')
-      if (!esAbierta(fila.tipoRespuesta.tipoRespuesta)) await cargarOpciones(fila)
+      if (!esAbierta(fila.tipoRespuesta.tipoRespuesta)) {
+        // Si la recarga falla solo se deja el banner de error (sin aviso
+        // verde de éxito, que haría creer que todo quedó bien).
+        const ok = await cargarOpciones(fila)
+        if (!ok) return
+      }
       setAviso(`Tipo actualizado a «${fila.tipoRespuesta.tipoRespuesta}».`)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Error inesperado')
@@ -296,8 +313,11 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
     })
   }
 
-  function handleDragStart(indice: number): void {
+  function handleDragStart(indice: number, event: React.DragEvent): void {
     if (!editable) return
+    // dataTransfer requerido para que el arrastre inicie también en Firefox.
+    event.dataTransfer.setData('text/plain', '')
+    event.dataTransfer.effectAllowed = 'move'
     dragDesde.current = indice
     ordenOriginal.current = items.map((item) => item.idEncuestaPregunta)
     setArrastando(indice)
@@ -419,21 +439,66 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
                       tipoRespuesta: item.tipoRespuesta.tipoRespuesta,
                     },
                   ]
+              // Formulario para agregar opción, idéntico en ambas ramas del
+              // panel (con o sin opciones): se arma una sola vez.
+              const opcionesDisponibles = catalogoOpciones.filter(
+                (opcion) =>
+                  !opcionesFila.some((asociada) => asociada.idOpcion === opcion.idOpcion),
+              )
+              const marcadorOpciones =
+                opcionesDisponibles.length === 0
+                  ? catalogoOpciones.length === 0
+                    ? 'No hay opciones en el catálogo'
+                    : 'Todas las opciones del catálogo ya están agregadas'
+                  : 'Selecciona una opción del catálogo…'
+              const formAgregarOpcion = editable ? (
+                <div className="flex flex-col min-[420px]:flex-row gap-2">
+                  <select
+                    value={idOpcionSel}
+                    onChange={(event) => setIdOpcionSel(event.target.value)}
+                    aria-label={`Opciones disponibles para ${item.pregunta.pregunta}`}
+                    className={CLASE_INPUT + ' flex-1 min-w-0'}
+                  >
+                    <option value="">{marcadorOpciones}</option>
+                    {opcionesDisponibles.map((opcion) => (
+                      <option key={opcion.idOpcion} value={opcion.idOpcion}>
+                        {opcion.opcion} (peso {opcion.peso})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => void handleAgregarOpcion(item)}
+                    disabled={editandoOpciones || editandoTipo || !idOpcionSel}
+                    title={
+                      !idOpcionSel
+                        ? 'Selecciona una opción primero'
+                        : 'Agregar la opción a la pregunta'
+                    }
+                    className="rounded-lg bg-azul-unam text-white font-bold cursor-pointer px-[18px] py-[10px]
+                      transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {editandoOpciones ? 'Agregando…' : 'Agregar opción'}
+                  </button>
+                </div>
+              ) : null
               return (
               <li
                 key={item.idEncuestaPregunta}
-                draggable={editable}
-                onDragStart={() => handleDragStart(indice)}
-                onDragEnter={() => handleDragEnter(indice)}
-                onDragOver={(event) => {
-                  if (enArrastre) event.preventDefault()
-                }}
-                onDragEnd={handleDragEnd}
                 className={`rounded-lg border border-outline bg-ink/2 transition-[background-color,border-color,opacity] duration-150 ${
                   enArrastre ? (indice === arrastando ? 'opacity-60 cursor-grabbing' : 'cursor-grab') : ''
                 }`}
               >
-                <div className="flex items-center gap-3 px-3 py-2.5">
+                <div
+                  draggable={editable}
+                  onDragStart={(event) => handleDragStart(indice, event)}
+                  onDragEnter={() => handleDragEnter(indice)}
+                  onDragOver={(event) => {
+                    if (enArrastre) event.preventDefault()
+                  }}
+                  onDragEnd={handleDragEnd}
+                  className={`flex items-center gap-3 px-3 py-2.5 ${editable ? 'cursor-grab' : ''}`}
+                >
                   <span className="text-xs font-semibold opacity-60 w-6 text-center shrink-0">
                     {indice + 1}
                   </span>
@@ -515,52 +580,15 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
                     {esCerrada && (
                       <div className="flex flex-col gap-2">
                         <p className="text-sm font-semibold text-ink">Opciones</p>
-                        {cargandoOpciones ? (
+                        {cargandoOpciones.has(item.idEncuestaPregunta) ? (
                           <p className="text-sm opacity-70">Cargando opciones…</p>
                         ) : opcionesFila.length === 0 ? (
-                          <>
-                            <p
-                              className="px-[14px] py-[10px] rounded-lg text-sm bg-oro-unam/15 text-azul-unam border border-oro-unam dark:text-oro-unam"
-                              role="status"
-                            >
-                              A esta pregunta cerrada le falta su configuración: agrega al menos una opción antes de guardarla.
-                            </p>
-                            {editable && (
-                              <div className="flex flex-col min-[420px]:flex-row gap-2">
-                                <select
-                                  value={idOpcionSel}
-                                  onChange={(event) => setIdOpcionSel(event.target.value)}
-                                  aria-label={`Opciones disponibles para ${item.pregunta.pregunta}`}
-                                  className={CLASE_INPUT + ' flex-1 min-w-0'}
-                                >
-                                  <option value="">
-                                    {catalogoOpciones.length === 0
-                                      ? 'No hay opciones en el catálogo'
-                                      : 'Selecciona una opción del catálogo…'}
-                                  </option>
-                                  {catalogoOpciones.map((opcion) => (
-                                    <option key={opcion.idOpcion} value={opcion.idOpcion}>
-                                      {opcion.opcion} (peso {opcion.peso})
-                                    </option>
-                                  ))}
-                                </select>
-                                <button
-                                  type="button"
-                                  onClick={() => void handleAgregarOpcion(item)}
-                                  disabled={editandoOpciones || editandoTipo || !idOpcionSel}
-                                  title={
-                                    !idOpcionSel
-                                      ? 'Selecciona una opción primero'
-                                      : 'Agregar la opción a la pregunta'
-                                  }
-                                  className="rounded-lg bg-azul-unam text-white font-bold cursor-pointer px-[18px] py-[10px]
-                                    transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
-                                >
-                                  {editandoOpciones ? 'Agregando…' : 'Agregar opción'}
-                                </button>
-                              </div>
-                            )}
-                          </>
+                          <p
+                            className="px-[14px] py-[10px] rounded-lg text-sm bg-oro-unam/15 text-azul-unam border border-oro-unam dark:text-oro-unam"
+                            role="status"
+                          >
+                            A esta pregunta cerrada le falta su configuración: agrega al menos una opción antes de guardarla.
+                          </p>
                         ) : (
                           <>
                             <ul className="m-0 p-0 list-none flex flex-wrap gap-2">
@@ -603,44 +631,9 @@ function ConstructorPreguntasModal({ encuesta, onClose }: Props) {
                                 </li>
                               ))}
                             </ul>
-                            {editable && (
-                              <div className="flex flex-col min-[420px]:flex-row gap-2">
-                                <select
-                                  value={idOpcionSel}
-                                  onChange={(event) => setIdOpcionSel(event.target.value)}
-                                  aria-label={`Opciones disponibles para ${item.pregunta.pregunta}`}
-                                  className={CLASE_INPUT + ' flex-1 min-w-0'}
-                                >
-                                  <option value="">Selecciona una opción del catálogo…</option>
-                                  {catalogoOpciones
-                                    .filter(
-                                      (opcion) =>
-                                        !opcionesFila.some((asociada) => asociada.idOpcion === opcion.idOpcion),
-                                    )
-                                    .map((opcion) => (
-                                      <option key={opcion.idOpcion} value={opcion.idOpcion}>
-                                        {opcion.opcion} (peso {opcion.peso})
-                                      </option>
-                                    ))}
-                                </select>
-                                <button
-                                  type="button"
-                                  onClick={() => void handleAgregarOpcion(item)}
-                                  disabled={editandoOpciones || editandoTipo || !idOpcionSel}
-                                  title={
-                                    !idOpcionSel
-                                      ? 'Selecciona una opción primero'
-                                      : 'Agregar la opción a la pregunta'
-                                  }
-                                  className="rounded-lg bg-azul-unam text-white font-bold cursor-pointer px-[18px] py-[10px]
-                                    transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[0.98] disabled:opacity-50 whitespace-nowrap"
-                                >
-                                  {editandoOpciones ? 'Agregando…' : 'Agregar opción'}
-                                </button>
-                              </div>
-                            )}
                           </>
                         )}
+                        {editable && formAgregarOpcion}
                       </div>
                     )}
                     {esCerrada && !editable && (
