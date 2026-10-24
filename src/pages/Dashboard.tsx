@@ -5,6 +5,7 @@ import EstadoBadge from '../components/EstadoBadge'
 import EncuestaFormModal from '../components/EncuestaFormModal'
 import EncuestaDetalleModal from '../components/EncuestaDetalleModal'
 import ConstructorPreguntasModal from '../components/ConstructorPreguntasModal'
+import VistaPreviaEncuestaModal from '../components/VistaPreviaEncuestaModal'
 import { getSession } from '../services/auth'
 import {
   accionesPorEstado,
@@ -92,6 +93,7 @@ function Dashboard() {
   const [formAbierto, setFormAbierto] = useState<FormEncuesta>(null)
   const [detalle, setDetalle] = useState<Encuesta | null>(null)
   const [armarEncuesta, setArmarEncuesta] = useState<Encuesta | null>(null)
+  const [previaEncuesta, setPreviaEncuesta] = useState<Encuesta | null>(null)
   const [tipos, setTipos] = useState<TipoEncuesta[]>([])
   const [unidades, setUnidades] = useState<UnidadResponsable[]>([])
   const [procesando, setProcesando] = useState<number | null>(null)
@@ -329,6 +331,13 @@ function Dashboard() {
                         <div className="inline-flex flex-wrap justify-end gap-2">
                           <button
                             type="button"
+                            onClick={() => setPreviaEncuesta(encuesta)}
+                            className="text-[13px] font-bold rounded-lg border border-azul-unam text-azul-unam bg-transparent cursor-pointer px-3 py-1.5 transition-colors hover:bg-accent-soft"
+                          >
+                            Vista previa
+                          </button>
+                          <button
+                            type="button"
                             onClick={() =>
                               navigate(
                                 `/dashboard/encuestas/${encuesta.idEncuesta}/resultados`,
@@ -394,6 +403,13 @@ function Dashboard() {
         <ConstructorPreguntasModal
           encuesta={armarEncuesta}
           onClose={() => setArmarEncuesta(null)}
+        />
+      )}
+
+      {previaEncuesta && (
+        <VistaPreviaEncuestaModal
+          encuesta={previaEncuesta}
+          onClose={() => setPreviaEncuesta(null)}
         />
       )}
 
