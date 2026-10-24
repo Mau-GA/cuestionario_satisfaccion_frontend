@@ -22,6 +22,44 @@ type Estado =
   | { fase: 'lista'; encuesta: EncuestaPublica }
   | { fase: 'enviada' }
   | { fase: 'respondida' }
+  | { fase: 'no-disponible'; motivo: MotivoNoDisponible }
+
+// Por qué no se puede responder. GET /encuestas/publicas/:token responde el
+// mismo 404 si el enlace no existe, si la encuesta todavía no inicia o si ya
+// cerró, así que al cargar solo se distingue 'desconocido'. 'invalida' se
+// detecta por el formato del token y 'cerrada' cuando la encuesta abrió bien
+// pero el envío respondió 404. 'no-iniciada' queda lista para cuando el API
+// indique el motivo.
+type MotivoNoDisponible = 'no-iniciada' | 'cerrada' | 'invalida' | 'desconocido'
+
+const AVISOS_NO_DISPONIBLE: Record<
+  MotivoNoDisponible,
+  { titulo: string; texto: string }
+> = {
+  'no-iniciada': {
+    titulo: 'Esta encuesta todavía no inicia',
+    texto:
+      'Vuelve a abrir el enlace cuando comience el periodo para responderla.',
+  },
+  cerrada: {
+    titulo: 'Esta encuesta ya cerró',
+    texto:
+      'El periodo para responderla terminó y ya no se reciben respuestas. Gracias por tu interés.',
+  },
+  invalida: {
+    titulo: 'Enlace no válido',
+    texto:
+      'Revisa que el enlace esté completo o pide uno nuevo a quien te lo compartió.',
+  },
+  desconocido: {
+    titulo: 'Esta encuesta no está disponible',
+    texto:
+      'El enlace no existe, o la encuesta todavía no inicia o ya cerró. Si crees que es un error, contacta a quien te compartió el enlace.',
+  },
+}
+
+// El API genera el token con randomBytes(32).toString('hex').
+const FORMATO_TOKEN = /^[0-9a-f]{64}$/i
 
 const CLASE_TARJETA =
   'w-full max-w-[720px] mx-auto box-border bg-surface border border-outline rounded-xl shadow-[0_4px_12px_rgba(0,61,121,0.08)] p-5 sm:p-7'
@@ -51,12 +89,23 @@ function aOpciones(pregunta: PreguntaPublica): OpcionRespuesta[] {
   }))
 }
 
-function mensajeDeCarga(err: unknown): string {
-  if (err instanceof ApiError && err.status === 404) {
-    return 'Esta encuesta no existe o ya no está disponible.'
+function estadoInicial(token: string): Estado {
+  if (!FORMATO_TOKEN.test(token)) {
+    return { fase: 'no-disponible', motivo: 'invalida' }
   }
-  if (err instanceof ApiError) return err.message
-  return 'No se pudo cargar la encuesta.'
+  if (yaRespondida(token)) return { fase: 'respondida' }
+  return { fase: 'cargando' }
+}
+
+function estadoDeCarga(err: unknown): Estado {
+  if (err instanceof ApiError && err.status === 404) {
+    return { fase: 'no-disponible', motivo: 'desconocido' }
+  }
+  return {
+    fase: 'error',
+    mensaje:
+      err instanceof ApiError ? err.message : 'No se pudo cargar la encuesta.',
+  }
 }
 
 function Aviso({ titulo, children }: { titulo: string; children: ReactNode }) {
@@ -79,16 +128,14 @@ function ResponderEncuesta() {
 }
 
 function ResponderEncuestaDeToken({ token }: { token: string }) {
-  const [estado, setEstado] = useState<Estado>(() =>
-    yaRespondida(token) ? { fase: 'respondida' } : { fase: 'cargando' },
-  )
+  const [estado, setEstado] = useState<Estado>(() => estadoInicial(token))
   const [valores, setValores] = useState<Record<number, ValorRespuesta>>({})
   const [errores, setErrores] = useState<Record<number, string>>({})
   const [enviando, setEnviando] = useState(false)
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null)
 
   useEffect(() => {
-    if (yaRespondida(token)) return
+    if (estadoInicial(token).fase !== 'cargando') return
     let vigente = true
     obtenerEncuestaPublica(token)
       .then((encuesta) => {
@@ -99,7 +146,7 @@ function ResponderEncuestaDeToken({ token }: { token: string }) {
         setEstado({ fase: 'lista', encuesta: { ...encuesta, preguntas } })
       })
       .catch((err) => {
-        if (vigente) setEstado({ fase: 'error', mensaje: mensajeDeCarga(err) })
+        if (vigente) setEstado(estadoDeCarga(err))
       })
     return () => {
       vigente = false
@@ -172,6 +219,10 @@ function ResponderEncuestaDeToken({ token }: { token: string }) {
       marcarRespondida(token)
       setEstado({ fase: 'enviada' })
     } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        setEstado({ fase: 'no-disponible', motivo: 'cerrada' })
+        return
+      }
       setErrorEnvio(
         err instanceof ApiError
           ? err.message
@@ -186,6 +237,15 @@ function ResponderEncuestaDeToken({ token }: { token: string }) {
     return (
       <Aviso titulo="Cargando encuesta…">
         <p>Un momento, por favor.</p>
+      </Aviso>
+    )
+  }
+
+  if (estado.fase === 'no-disponible') {
+    const aviso = AVISOS_NO_DISPONIBLE[estado.motivo]
+    return (
+      <Aviso titulo={aviso.titulo}>
+        <p>{aviso.texto}</p>
       </Aviso>
     )
   }
