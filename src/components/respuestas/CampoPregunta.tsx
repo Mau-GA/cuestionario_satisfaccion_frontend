@@ -13,7 +13,7 @@ function CampoPregunta({ id, pregunta, requerida, error, children }: Props) {
     <fieldset className="m-0 min-w-0 border-0 p-0">
       <legend
         id={`${id}-legend`}
-        className="mb-3 p-0 text-base font-bold text-azul-unam dark:text-oro-unam"
+        className="mb-3 max-w-full p-0 text-base font-bold [overflow-wrap:anywhere] text-azul-unam dark:text-oro-unam"
       >
         {pregunta}
         {requerida && (

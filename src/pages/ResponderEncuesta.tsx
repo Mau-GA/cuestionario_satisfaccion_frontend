@@ -221,7 +221,7 @@ function ResponderEncuestaDeToken({ token }: { token: string }) {
   return (
     <AppLayout>
       <section className={CLASE_TARJETA}>
-        <h1 className="text-ink">{encuesta.titulo}</h1>
+        <h1 className="text-ink [overflow-wrap:anywhere]">{encuesta.titulo}</h1>
         <p className="mt-2 text-sm">
           Tus respuestas son anónimas. Las preguntas marcadas con{' '}
           <span className="text-red-600">*</span> son obligatorias.
