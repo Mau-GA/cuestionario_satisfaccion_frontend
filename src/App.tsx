@@ -1,121 +1,102 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect } from 'react'
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  useNavigate,
+  Navigate,
+} from 'react-router-dom'
+import ProtectedRoute from './components/ProtectedRoute'
+import { UNAUTHORIZED_EVENT } from './services/http'
+import { getSession, logout } from './services/auth'
+import { ROLES } from './types/auth'
+import AdminDashboard from './pages/AdminDashboard'
+import UsersPage from './pages/UsersPage'
+import UnidadesPage from './pages/UnidadesPage'
+import SolicitudesPage from './pages/SolicitudesPage'
+import CatalogosPage from './pages/CatalogosPage'
+import Dashboard from './pages/Dashboard'
+import Home from './pages/Home'
+import Login from './pages/Login'
+import NoEncontrado from './pages/NoEncontrado'
+import Resultados from './pages/Resultados'
+import SinAcceso from './pages/SinAcceso'
+import SolicitudAcceso from './pages/SolicitudAcceso'
+import ResponderEncuesta from './pages/ResponderEncuesta'
+
+function SessionWatcher() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    function onUnauthorized(event: Event): void {
+      const detail = (event as CustomEvent<{ refreshToken: string | null }>)
+        .detail
+      const eventToken = detail?.refreshToken ?? null
+      const currentToken = getSession()?.refreshToken ?? null
+
+      // Ignora el evento solo si ya hay una sesión distinta a la que falló
+      // (p. ej. un login nuevo), para no borrar una sesión recién creada.
+      if (currentToken !== null && currentToken !== eventToken) {
+        return
+      }
+
+      logout()
+      navigate('/login', { replace: true, state: { expired: true } })
+    }
+
+    window.addEventListener(UNAUTHORIZED_EVENT, onUnauthorized)
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, onUnauthorized)
+  }, [navigate])
+
+  return null
+}
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+    <BrowserRouter>
+      <SessionWatcher />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/solicitar-acceso" element={<SolicitudAcceso />} />
+        <Route path="/responder/:token" element={<ResponderEncuesta />} />
+        <Route path="/sin-acceso" element={<SinAcceso />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/encuestas/:id/resultados"
+          element={
+            <ProtectedRoute>
+              <Resultados />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute roles={[ROLES.ADMIN]}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
         >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+          <Route index element={<Navigate to="usuarios" replace />} />
+          <Route path="usuarios" element={<UsersPage />} />
+          <Route path="unidades" element={<UnidadesPage />} />
+          <Route path="solicitudes" element={<SolicitudesPage />} />
+          <Route path="catalogos/preguntas" element={<CatalogosPage catalogo="preguntas" />} />
+          <Route path="catalogos/opciones" element={<CatalogosPage catalogo="opciones" />} />
+          <Route path="catalogos/tipos-encuesta" element={<CatalogosPage catalogo="tipos-encuesta" />} />
+          <Route path="catalogos/tipos-respuesta" element={<CatalogosPage catalogo="tipos-respuesta" />} />
+        </Route>
+        <Route path="*" element={<NoEncontrado />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
