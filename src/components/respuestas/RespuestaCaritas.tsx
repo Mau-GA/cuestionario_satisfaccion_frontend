@@ -13,6 +13,10 @@ function RespuestaCaritas({
   deshabilitado,
 }: PropsPreguntaOpciones) {
   const ordenadas = ordenarPorPeso(opciones)
+  const columnas =
+    ordenadas.length <= 5
+      ? 'grid-flow-col auto-cols-fr'
+      : 'grid-cols-[repeat(auto-fit,minmax(3.5rem,1fr))]'
 
   return (
     <CampoPregunta
@@ -21,7 +25,7 @@ function RespuestaCaritas({
       requerida={requerida}
       error={error}
     >
-      <div className="grid auto-cols-fr grid-flow-col gap-1 sm:gap-2">
+      <div className={`grid ${columnas} gap-1 sm:gap-2`}>
         {ordenadas.map((opcion, i) => {
           const seleccionada = opcion.idOpcion === valor
           return (
@@ -47,7 +51,7 @@ function RespuestaCaritas({
               <span aria-hidden className="text-3xl leading-none sm:text-4xl">
                 {caritaPara(i, ordenadas.length)}
               </span>
-              <span className="text-xs leading-tight break-words">
+              <span className="w-full text-xs leading-tight hyphens-auto [overflow-wrap:anywhere]">
                 {opcion.etiqueta}
               </span>
             </label>
