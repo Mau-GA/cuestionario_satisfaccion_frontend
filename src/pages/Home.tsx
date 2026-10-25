@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
+import EncuestasPublicas from '../components/EncuestasPublicas'
 import { getSession } from '../services/auth'
 import { menuPorRol } from '../config/navigation'
 
@@ -39,6 +40,8 @@ function Home() {
           </Link>
         )}
       </nav>
+
+      <EncuestasPublicas />
     </AppLayout>
   )
 }

@@ -23,6 +23,7 @@ import Resultados from './pages/Resultados'
 import SinAcceso from './pages/SinAcceso'
 import SolicitudAcceso from './pages/SolicitudAcceso'
 import ResponderEncuesta from './pages/ResponderEncuesta'
+import EventoPublico from './pages/EventoPublico'
 
 function SessionWatcher() {
   const navigate = useNavigate()
@@ -60,6 +61,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/solicitar-acceso" element={<SolicitudAcceso />} />
         <Route path="/responder/:token" element={<ResponderEncuesta />} />
+        <Route path="/eventos/:idEvento" element={<EventoPublico />} />
         <Route path="/sin-acceso" element={<SinAcceso />} />
         <Route
           path="/dashboard"
