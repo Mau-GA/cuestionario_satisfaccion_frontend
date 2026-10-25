@@ -5,7 +5,7 @@ import {
   refreshSession,
   type RefreshResult,
 } from './auth'
-import { ApiError, serverMessage } from '../types/api'
+import { ApiError, serverMessage, serverMotivo } from '../types/api'
 import { API_BASE_URL } from './config'
 
 export const UNAUTHORIZED_EVENT = 'auth:unauthorized'
@@ -112,7 +112,11 @@ async function request<T>(
   }
 
   if (!response.ok) {
-    throw new ApiError(serverMessage(body), response.status)
+    throw new ApiError(
+      serverMessage(body),
+      response.status,
+      serverMotivo(body),
+    )
   }
 
   return body as T

@@ -24,13 +24,29 @@ type Estado =
   | { fase: 'respondida' }
   | { fase: 'no-disponible'; motivo: MotivoNoDisponible }
 
-// Por qué no se puede responder. GET /encuestas/publicas/:token responde el
-// mismo 404 si el enlace no existe, si la encuesta todavía no inicia o si ya
-// cerró, así que al cargar solo se distingue 'desconocido'. 'invalida' se
-// detecta por el formato del token y 'cerrada' cuando la encuesta abrió bien
-// pero el envío respondió 404. 'no-iniciada' queda lista para cuando el API
-// indique el motivo.
+// Por qué no se puede responder. Desde BE-50 el API lo dice: manda `motivo` en
+// el cuerpo del error, con su propio código por si el cliente solo mira el
+// status (404 invalida, 409 no-iniciada, 410 cerrada). 'invalida' también se
+// detecta antes de pedir nada, por el formato del token, y 'desconocido' queda
+// para un error que no traiga motivo.
 type MotivoNoDisponible = 'no-iniciada' | 'cerrada' | 'invalida' | 'desconocido'
+
+// Los motivos que manda el API, tal como vienen en el cuerpo.
+const MOTIVOS_DEL_API: Record<string, MotivoNoDisponible> = {
+  invalida: 'invalida',
+  'no-iniciada': 'no-iniciada',
+  cerrada: 'cerrada',
+}
+
+function motivoDeError(err: unknown): MotivoNoDisponible | null {
+  if (!(err instanceof ApiError)) return null
+  if (err.motivo !== null && err.motivo in MOTIVOS_DEL_API) {
+    return MOTIVOS_DEL_API[err.motivo]
+  }
+  // Un API anterior a BE-50 responde 404 sin motivo para los tres casos.
+  if (err.status === 404) return 'desconocido'
+  return null
+}
 
 const AVISOS_NO_DISPONIBLE: Record<
   MotivoNoDisponible,
@@ -98,8 +114,9 @@ function estadoInicial(token: string): Estado {
 }
 
 function estadoDeCarga(err: unknown): Estado {
-  if (err instanceof ApiError && err.status === 404) {
-    return { fase: 'no-disponible', motivo: 'desconocido' }
+  const motivo = motivoDeError(err)
+  if (motivo !== null) {
+    return { fase: 'no-disponible', motivo }
   }
   return {
     fase: 'error',
@@ -219,8 +236,11 @@ function ResponderEncuestaDeToken({ token }: { token: string }) {
       marcarRespondida(token)
       setEstado({ fase: 'enviada' })
     } catch (err) {
-      if (err instanceof ApiError && err.status === 404) {
-        setEstado({ fase: 'no-disponible', motivo: 'cerrada' })
+      // Si la encuesta dejo de estar disponible entre que se cargo y se envio,
+      // el aviso sustituye al formulario: ya no hay nada que reintentar.
+      const motivo = motivoDeError(err)
+      if (motivo !== null) {
+        setEstado({ fase: 'no-disponible', motivo })
         return
       }
       setErrorEnvio(
