@@ -51,7 +51,11 @@ function TarjetaEvento({
     <Link
       to={`/eventos/${evento.idEvento}`}
       className={CLASE_TARJETA}
-      aria-label={`Ver las ${evento.encuestas} encuestas del evento «${evento.nombre}», de ${evento.unidadResponsable}`}
+      aria-label={`Ver ${
+        evento.encuestas === 1
+          ? 'la encuesta'
+          : `las ${evento.encuestas} encuestas`
+      } del evento «${evento.nombre}», de ${evento.unidadResponsable}`}
     >
       <span className={CLASE_OJIVA}>Evento</span>
       <h2 className="m-0 text-lg text-azul-unam break-words">{evento.nombre}</h2>

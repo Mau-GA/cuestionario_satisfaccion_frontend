@@ -38,6 +38,7 @@ export interface Encuesta {
   unidadResponsable: UnidadEncuesta | null
   fechaInicioVigencia: string | null
   fechaFinVigencia: string | null
+  idEvento: number | null
   visibleEnInicio: boolean | number
   tokenPublico: string | null
   activo: boolean | number
@@ -51,6 +52,8 @@ export interface CreateEncuestaDto {
   idUnidadResponsable: number
   fechaInicioVigencia?: string | null
   fechaFinVigencia?: string | null
+  /** Evento que agrupa la encuesta. Null o ausente la deja suelta. */
+  idEvento?: number | null
 }
 
 export interface UpdateEncuestaDto {
@@ -59,6 +62,8 @@ export interface UpdateEncuestaDto {
   idUnidadResponsable?: number
   fechaInicioVigencia?: string | null
   fechaFinVigencia?: string | null
+  /** Null saca la encuesta del evento y la deja suelta. */
+  idEvento?: number | null
   activo?: boolean
 }
 

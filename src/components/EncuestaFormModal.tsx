@@ -6,6 +6,13 @@ import {
   type Encuesta,
   type TipoEncuesta,
 } from '../services/encuestas'
+import {
+  crearEvento,
+  deLaUnidad,
+  listarEventos,
+  mismoNombre,
+  type Evento,
+} from '../services/eventos'
 import type { UnidadResponsable } from '../services/unidades'
 import { ROLES, type Role } from '../types/auth'
 import { ApiError } from '../types/api'
@@ -80,8 +87,31 @@ function EncuestaFormModal({
         ? String(idUnidadPredeterminada)
         : '',
   )
+  // FE-30: el evento se escribe, no se elige de una lista cerrada. Si el texto
+  // no coincide con ninguno de la unidad, se crea al guardar.
+  const [evento, setEvento] = useState('')
+  const [eventos, setEventos] = useState<Evento[]>([])
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
+
+  useEffect(() => {
+    let vigente = true
+    listarEventos()
+      .then((res) => {
+        if (!vigente) return
+        setEventos(res)
+        // Al editar, el campo arranca con el nombre del evento que ya tenia.
+        const actual = res.find((e) => e.idEvento === encuesta?.idEvento)
+        if (actual) setEvento(actual.nombre)
+      })
+      .catch(() => {
+        // Sin la lista el campo sigue sirviendo para escribir uno nuevo; no
+        // vale la pena bloquear el formulario entero por el autocompletado.
+      })
+    return () => {
+      vigente = false
+    }
+  }, [encuesta?.idEvento])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
@@ -99,6 +129,33 @@ function EncuestaFormModal({
     }
     return lista
   }, [tipos, encuesta])
+
+  /**
+   * La unidad con la que se va a guardar. El selector de evento depende de
+   * ella: un administrador de encuestas solo puede elegir eventos de la suya,
+   * y el administrador general solo despues de elegir unidad.
+   */
+  const unidadActual = useMemo<number | null>(() => {
+    if (esEdicion) {
+      return encuesta.unidadResponsable?.idUnidadResponsable ?? null
+    }
+    if (esAdminGlobal) {
+      return idUnidad ? Number(idUnidad) : null
+    }
+    return idUnidadPredeterminada
+  }, [esEdicion, encuesta, esAdminGlobal, idUnidad, idUnidadPredeterminada])
+
+  const eventosDeLaUnidad = useMemo(
+    () => deLaUnidad(eventos, unidadActual),
+    [eventos, unidadActual],
+  )
+
+  const eventoExistente = useMemo(
+    () =>
+      eventosDeLaUnidad.find((item) => mismoNombre(item.nombre, evento)) ??
+      null,
+    [eventosDeLaUnidad, evento],
+  )
 
   const iniciada =
     esEdicion &&
@@ -156,12 +213,28 @@ function EncuestaFormModal({
 
     setGuardando(true)
     try {
+      // Null saca la encuesta del evento. Un nombre que no esta en la unidad
+      // es un evento nuevo y se crea antes de guardar la encuesta.
+      const nombreEvento = evento.trim()
+      let idEvento: number | null = null
+      if (nombreEvento) {
+        idEvento = eventoExistente
+          ? eventoExistente.idEvento
+          : (
+              await crearEvento({
+                nombre: nombreEvento,
+                idUnidadResponsable: unidad,
+              })
+            ).idEvento
+      }
+
       if (esEdicion) {
         await actualizarEncuesta(encuesta.idEncuesta, {
           titulo: tituloLimpio,
           idTipoEncuesta: Number(idTipo),
           fechaInicioVigencia: inicioISO,
           fechaFinVigencia: finISO,
+          idEvento,
           activo: mostrar,
         })
       } else {
@@ -171,6 +244,7 @@ function EncuestaFormModal({
           idUnidadResponsable: unidad,
           fechaInicioVigencia: inicioISO,
           fechaFinVigencia: finISO,
+          idEvento,
         })
         if (!mostrar) {
           await actualizarEncuesta(creada.idEncuesta, { activo: false })
@@ -288,6 +362,39 @@ function EncuestaFormModal({
             inicio la encuesta queda en Borrador; con inicio futuro será
             Programada; dentro de la vigencia, Abierta.
           </p>
+
+          <label className="flex flex-col gap-1.5 text-sm font-semibold">
+            <span>
+              Evento{' '}
+              <span className="font-normal opacity-70">(opcional)</span>
+            </span>
+            <input
+              type="text"
+              value={evento}
+              onChange={(event) => setEvento(event.target.value)}
+              list="eventos-de-la-unidad"
+              maxLength={255}
+              disabled={unidadActual === null}
+              placeholder={
+                unidadActual === null
+                  ? 'Elige antes la unidad responsable'
+                  : 'Busca uno de tu unidad o escribe uno nuevo'
+              }
+              className={`${CLASE_INPUT} disabled:opacity-60 disabled:cursor-not-allowed`}
+            />
+            <datalist id="eventos-de-la-unidad">
+              {eventosDeLaUnidad.map((item) => (
+                <option key={item.idEvento} value={item.nombre} />
+              ))}
+            </datalist>
+            <span className="text-xs font-normal opacity-70">
+              {evento.trim() === ''
+                ? 'Sin evento, la encuesta se muestra suelta en la vista de inicio.'
+                : eventoExistente !== null
+                  ? `Se agrupará bajo «${eventoExistente.nombre}», que ya existe en tu unidad.`
+                  : `Se creará el evento «${evento.trim()}» en tu unidad al guardar.`}
+            </span>
+          </label>
 
           <label className="flex items-start gap-2.5 text-sm font-semibold">
             <input
