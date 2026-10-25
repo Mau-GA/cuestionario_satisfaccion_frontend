@@ -29,7 +29,12 @@ function VistaPreviaEncuestaModal({ encuesta, onClose }: Props) {
     Record<number, Opcion[]>
   >({})
   const [loading, setLoading] = useState(true)
+  // Dos errores distintos a proposito. `error` es parcial: las preguntas
+  // cargaron y solo fallaron las opciones de alguna, asi que el aviso convive
+  // con la vista. `errorCarga` es el que deja la vista sin nada; con el puesto
+  // no se puede decir "no tiene preguntas", porque no sabemos si tiene.
   const [error, setError] = useState<string | null>(null)
+  const [errorCarga, setErrorCarga] = useState<string | null>(null)
   const [valores, setValores] = useState<Record<number, ValorRespuesta>>({})
 
   // El texto ('texto') es la única respuesta abierta; las cerradas traen sus
@@ -39,6 +44,7 @@ function VistaPreviaEncuestaModal({ encuesta, onClose }: Props) {
   const cargar = useCallback(async (): Promise<void> => {
     setLoading(true)
     setError(null)
+    setErrorCarga(null)
     try {
       const res = await listarPreguntasEncuesta(encuesta.idEncuesta)
       const filas = [...res].sort((a, b) => a.orden - b.orden)
@@ -72,7 +78,9 @@ function VistaPreviaEncuestaModal({ encuesta, onClose }: Props) {
       setOpcionesPorPregunta(mapa)
       setPreguntas(filas)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Error inesperado')
+      setErrorCarga(err instanceof ApiError ? err.message : 'Error inesperado')
+      setPreguntas([])
+      setOpcionesPorPregunta({})
     } finally {
       setLoading(false)
     }
@@ -134,6 +142,23 @@ function VistaPreviaEncuestaModal({ encuesta, onClose }: Props) {
 
         {loading ? (
           <p className="mt-6">Cargando…</p>
+        ) : errorCarga !== null ? (
+          <div className="mt-6">
+            <p
+              className="px-[14px] py-3 rounded-lg text-sm bg-oro-unam/15 text-azul-unam border border-oro-unam"
+              role="alert"
+            >
+              No se pudo cargar la vista previa: {errorCarga}
+            </p>
+            <button
+              type="button"
+              onClick={() => void cargar()}
+              className="mt-4 rounded-lg bg-transparent text-azul-unam border border-azul-unam font-bold cursor-pointer px-[18px] py-[10px]
+                transition-[background-color,transform] duration-150 hover:bg-accent-soft active:scale-[0.98]"
+            >
+              Reintentar
+            </button>
+          </div>
         ) : preguntas.length === 0 ? (
           <p className="mt-6">Esta encuesta todavía no tiene preguntas.</p>
         ) : (
@@ -152,7 +177,11 @@ function VistaPreviaEncuestaModal({ encuesta, onClose }: Props) {
                   }
                   valor={valores[idPregunta] ?? null}
                   onChange={(valor) => cambiarValor(idPregunta, valor)}
-                  requerida={false}
+                  // Todas, igual que en la pantalla publica: el backend
+                  // exige una respuesta por cada pregunta activa, incluida la
+                  // de texto libre. Una vista previa que no las marcara
+                  // mentiria sobre lo que vera quien responde.
+                  requerida
                   error={null}
                 />
               )
