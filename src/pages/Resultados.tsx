@@ -3,16 +3,16 @@ import { Link, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import EstadoBadge from '../components/EstadoBadge'
 import GraficaOpciones from '../components/resultados/GraficaOpciones'
-import NubeTexto from '../components/resultados/NubeTexto'
+import ListaComentarios from '../components/resultados/ListaComentarios'
 import { ApiError } from '../types/api'
 import {
   calcularEstado,
   type Encuesta,
 } from '../services/encuestas'
 import {
-  esPreguntaDeOpciones,
   obtenerEncuesta,
   obtenerResultados,
+  type Participacion,
   type PreguntaResultado,
   type ResultadosEncuesta,
 } from '../services/resultados'
@@ -21,57 +21,70 @@ function getErrorMessage(err: unknown): string {
   return err instanceof ApiError ? err.message : 'Error inesperado'
 }
 
-function TarjetaParticipacion({ resultados }: { resultados: ResultadosEncuesta }) {
-  const promedio =
-    resultados.totalPreguntas > 0
-      ? Math.round(
-          (resultados.participacion / resultados.totalPreguntas) * 10,
-        ) / 10
-      : resultados.participacion
-
+function Dato({ etiqueta, valor, pie }: { etiqueta: string; valor: number; pie: string }) {
   return (
-    <dl className="grid grid-cols-2 gap-4 m-0">
-      <div className="rounded-xl border border-outline bg-surface-alt p-4">
-        <dt className="text-xs font-bold uppercase tracking-[0.4px] opacity-70">
-          Participación
-        </dt>
-        <dd className="m-0 mt-1 text-3xl font-bold text-azul-unam">
-          {resultados.participacion}
-        </dd>
-        <dd className="m-0 text-xs opacity-70">
-          encuestas respondidas
-        </dd>
-      </div>
-      <div className="rounded-xl border border-outline bg-surface-alt p-4">
-        <dt className="text-xs font-bold uppercase tracking-[0.4px] opacity-70">
-          Promedio por pregunta
-        </dt>
-        <dd className="m-0 mt-1 text-3xl font-bold text-azul-unam">
-          {promedio}
-        </dd>
-        <dd className="m-0 text-xs opacity-70">
-          respuestas por pregunta
-        </dd>
-      </div>
+    <div className="rounded-xl border border-outline bg-surface-alt p-4">
+      <dt className="text-xs font-bold uppercase tracking-[0.4px] opacity-70">
+        {etiqueta}
+      </dt>
+      <dd className="m-0 mt-1 text-3xl font-bold text-azul-unam">{valor}</dd>
+      <dd className="m-0 text-xs opacity-70">{pie}</dd>
+    </div>
+  )
+}
+
+/**
+ * Los tres numeros son los que calcula el API. Un envio esta completo cuando
+ * contesto todas las preguntas activas de la encuesta; el resto quedo a medias.
+ */
+function TarjetaParticipacion({ participacion }: { participacion: Participacion }) {
+  return (
+    <dl className="grid grid-cols-1 gap-4 m-0 sm:grid-cols-3">
+      <Dato
+        etiqueta="Participación"
+        valor={participacion.envios}
+        pie={participacion.envios === 1 ? 'envío recibido' : 'envíos recibidos'}
+      />
+      <Dato
+        etiqueta="Completos"
+        valor={participacion.completos}
+        pie={
+          participacion.totalPreguntas === 1
+            ? 'contestaron la única pregunta'
+            : `contestaron las ${participacion.totalPreguntas} preguntas`
+        }
+      />
+      <Dato
+        etiqueta="Incompletos"
+        valor={participacion.incompletos}
+        pie="dejaron preguntas sin contestar"
+      />
     </dl>
   )
 }
 
-function TarjetaPregunta({ pregunta }: { pregunta: PreguntaResultado }) {
-  const deOpciones = esPreguntaDeOpciones(pregunta.tipo)
-  const vacia = pregunta.totalRespuestas === 0
+function TarjetaPregunta({
+  idEncuesta,
+  pregunta,
+}: {
+  idEncuesta: number
+  pregunta: PreguntaResultado
+}) {
+  const vacia = pregunta.respuestas === 0
 
   return (
     <article className="rounded-xl border border-outline bg-surface p-5">
       <header className="flex items-start justify-between gap-4">
-        <h3 className="text-base text-azul-unam">{pregunta.pregunta}</h3>
+        <h3 className="text-base text-azul-unam">
+          {pregunta.orden}. {pregunta.pregunta}
+        </h3>
         <span className="whitespace-nowrap rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-azul-unam">
-          {pregunta.tipo}
+          {pregunta.tipoRespuesta}
         </span>
       </header>
       <p className="mt-1 text-xs opacity-70">
-        {pregunta.totalRespuestas}{' '}
-        {pregunta.totalRespuestas === 1 ? 'respuesta' : 'respuestas'}
+        {pregunta.respuestas}{' '}
+        {pregunta.respuestas === 1 ? 'respuesta' : 'respuestas'}
       </p>
 
       <div className="mt-4">
@@ -79,10 +92,13 @@ function TarjetaPregunta({ pregunta }: { pregunta: PreguntaResultado }) {
           <p className="text-sm opacity-70">
             Aún no hay respuestas para esta pregunta.
           </p>
-        ) : deOpciones ? (
-          <GraficaOpciones pregunta={pregunta} />
+        ) : pregunta.esTextoLibre ? (
+          <ListaComentarios
+            idEncuesta={idEncuesta}
+            idEncuestaPregunta={pregunta.idEncuestaPregunta}
+          />
         ) : (
-          <NubeTexto textos={pregunta.textos} />
+          <GraficaOpciones pregunta={pregunta} />
         )}
       </div>
     </article>
@@ -174,9 +190,13 @@ function Resultados() {
           </div>
         ) : resultados ? (
           <div className="mt-6 flex flex-col gap-6">
-            <TarjetaParticipacion resultados={resultados} />
+            <TarjetaParticipacion participacion={resultados.participacion} />
 
-            {resultados.participacion === 0 ? (
+            {resultados.preguntas.length === 0 ? (
+              <p className="text-sm opacity-70">
+                Esta encuesta todavía no tiene preguntas configuradas.
+              </p>
+            ) : resultados.participacion.envios === 0 ? (
               <div className="rounded-xl border border-dashed border-outline bg-surface-alt p-8 text-center">
                 <p className="text-lg font-bold text-azul-unam">
                   Aún no hay respuestas
@@ -186,15 +206,12 @@ function Resultados() {
                   participación y una gráfica por pregunta.
                 </p>
               </div>
-            ) : resultados.preguntas.length === 0 ? (
-              <p className="text-sm opacity-70">
-                Esta encuesta todavía no tiene preguntas configuradas.
-              </p>
             ) : (
               <div className="flex flex-col gap-4">
                 {resultados.preguntas.map((pregunta) => (
                   <TarjetaPregunta
                     key={pregunta.idEncuestaPregunta}
+                    idEncuesta={idEncuesta}
                     pregunta={pregunta}
                   />
                 ))}

@@ -1,134 +1,87 @@
-import type { ConteoOpcion, PreguntaResultado } from '../../services/resultados'
-import { caritaPara, ordenarPorPeso } from '../respuestas/opciones'
+import type { OpcionResultado, PreguntaResultado } from '../../services/resultados'
+import { caritaPara } from '../respuestas/opciones'
 
-interface Fila {
-  clave: string
-  etiqueta: string
-  total: number
-  peso: number | string | null
-}
+/**
+ * La distribucion llega del API ya ordenada de la opcion mas negativa a la mas
+ * positiva y con el porcentaje calculado, asi que estas graficas solo pintan.
+ */
 
-function filasDeOpciones(opciones: ConteoOpcion[]): Fila[] {
-  const comparable = opciones.map((opcion) => ({
-    idOpcion: opcion.idOpcion ?? 0,
-    etiqueta: opcion.etiqueta,
-    peso: opcion.peso,
-  }))
-  const ordenadas = ordenarPorPeso(comparable)
-  return ordenadas.map((opcion) => {
-    const conteo = opciones.find(
-      (item) => (item.idOpcion ?? 0) === opcion.idOpcion,
-    )
-    return {
-      clave: String(opcion.idOpcion),
-      etiqueta: opcion.etiqueta,
-      total: conteo?.total ?? 0,
-      peso: opcion.peso,
-    }
-  })
-}
-
-function porcentaje(total: number, base: number): number {
-  if (base <= 0) return 0
-  return Math.round((total / base) * 100)
-}
-
-function GraficaBarras({
-  filas,
-  base,
-}: {
-  filas: Fila[]
-  base: number
-}) {
+function GraficaBarras({ distribucion }: { distribucion: OpcionResultado[] }) {
   return (
     <ul className="m-0 list-none p-0 flex flex-col gap-2.5">
-      {filas.map((fila) => {
-        const pct = porcentaje(fila.total, base)
-        return (
-          <li key={fila.clave} className="flex flex-col gap-1">
-            <div className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="break-words text-ink">{fila.etiqueta}</span>
-              <span className="whitespace-nowrap font-bold text-azul-unam">
-                {fila.total} · {pct}%
-              </span>
-            </div>
+      {distribucion.map((opcion) => (
+        <li key={opcion.idOpcion} className="flex flex-col gap-1">
+          <div className="flex items-baseline justify-between gap-3 text-sm">
+            <span className="break-words text-ink">{opcion.opcion}</span>
+            <span className="whitespace-nowrap font-bold text-azul-unam">
+              {opcion.veces} · {opcion.porcentaje}%
+            </span>
+          </div>
+          <div
+            className="h-3 w-full overflow-hidden rounded-full bg-surface-alt"
+            role="img"
+            aria-label={`${opcion.opcion}: ${opcion.veces} ${
+              opcion.veces === 1 ? 'respuesta' : 'respuestas'
+            } (${opcion.porcentaje}%)`}
+          >
             <div
-              className="h-3 w-full overflow-hidden rounded-full bg-surface-alt"
-              role="img"
-              aria-label={`${fila.etiqueta}: ${fila.total} respuestas (${pct}%)`}
-            >
-              <div
-                className="h-full rounded-full bg-azul-unam transition-[width] duration-300"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-          </li>
-        )
-      })}
+              className="h-full rounded-full bg-azul-unam transition-[width] duration-300"
+              style={{ width: `${opcion.porcentaje}%` }}
+            />
+          </div>
+        </li>
+      ))}
     </ul>
   )
 }
 
 function DistribucionCaritas({
-  filas,
-  base,
+  distribucion,
 }: {
-  filas: Fila[]
-  base: number
+  distribucion: OpcionResultado[]
 }) {
   return (
     <ul className="m-0 list-none p-0 flex flex-col gap-2.5">
-      {filas.map((fila, indice) => {
-        const pct = porcentaje(fila.total, base)
-        return (
-          <li key={fila.clave} className="flex items-center gap-3">
-            <span aria-hidden className="text-2xl leading-none">
-              {caritaPara(indice, filas.length)}
-            </span>
-            <div className="flex-1">
-              <div className="flex items-baseline justify-between gap-3 text-sm">
-                <span className="break-words text-ink">{fila.etiqueta}</span>
-                <span className="whitespace-nowrap font-bold text-azul-unam">
-                  {fila.total} · {pct}%
-                </span>
-              </div>
-              <div
-                className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-surface-alt"
-                role="img"
-                aria-label={`${fila.etiqueta}: ${fila.total} respuestas (${pct}%)`}
-              >
-                <div
-                  className="h-full rounded-full bg-oro-unam transition-[width] duration-300"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
+      {distribucion.map((opcion, indice) => (
+        <li key={opcion.idOpcion} className="flex items-center gap-3">
+          <span aria-hidden className="text-2xl leading-none">
+            {caritaPara(indice, distribucion.length)}
+          </span>
+          <div className="flex-1">
+            <div className="flex items-baseline justify-between gap-3 text-sm">
+              <span className="break-words text-ink">{opcion.opcion}</span>
+              <span className="whitespace-nowrap font-bold text-azul-unam">
+                {opcion.veces} · {opcion.porcentaje}%
+              </span>
             </div>
-          </li>
-        )
-      })}
+            <div
+              className="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-surface-alt"
+              role="img"
+              aria-label={`${opcion.opcion}: ${opcion.veces} ${
+                opcion.veces === 1 ? 'respuesta' : 'respuestas'
+              } (${opcion.porcentaje}%)`}
+            >
+              <div
+                className="h-full rounded-full bg-oro-unam transition-[width] duration-300"
+                style={{ width: `${opcion.porcentaje}%` }}
+              />
+            </div>
+          </div>
+        </li>
+      ))}
     </ul>
   )
 }
 
 function PromedioEstrellas({
-  filas,
-  base,
+  distribucion,
+  promedio,
+  respuestas,
 }: {
-  filas: Fila[]
-  base: number
+  distribucion: OpcionResultado[]
+  promedio: number | null
+  respuestas: number
 }) {
-  const conPeso = filas.filter(
-    (fila) => fila.peso !== null && Number.isFinite(Number(fila.peso)),
-  )
-  const respuestas = conPeso.reduce((suma, fila) => suma + fila.total, 0)
-  const promedio =
-    respuestas > 0
-      ? conPeso.reduce(
-          (suma, fila) => suma + Number(fila.peso) * fila.total,
-          0,
-        ) / respuestas
-      : 0
-
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
@@ -137,38 +90,46 @@ function PromedioEstrellas({
         </span>
         <div>
           <p className="font-bold text-azul-unam">
-            Promedio: {promedio ? promedio.toFixed(2) : '—'}
+            Promedio: {promedio === null ? '—' : promedio.toFixed(2)}
           </p>
-          <p className="text-xs opacity-70">{base} respuestas registradas</p>
+          <p className="text-xs opacity-70">
+            {respuestas}{' '}
+            {respuestas === 1 ? 'respuesta registrada' : 'respuestas registradas'}
+          </p>
         </div>
       </div>
-      <GraficaBarras filas={filas} base={base} />
+      <GraficaBarras distribucion={distribucion} />
     </div>
   )
 }
 
-function respaldoEstrella(promedio: number): string {
-  const llenas = Math.round(promedio)
+// El promedio ya viene ponderado por el peso de cada opcion; aqui solo se
+// traduce a estrellas llenas. Una pregunta sin respuestas con peso no tiene
+// promedio, y entonces no se pinta ninguna llena.
+function respaldoEstrella(promedio: number | null): string {
   const total = 5
-  const acotado = Math.max(0, Math.min(total, llenas))
-  return '★'.repeat(acotado) + '☆'.repeat(total - acotado)
+  const llenas = Math.max(0, Math.min(total, Math.round(promedio ?? 0)))
+  return '★'.repeat(llenas) + '☆'.repeat(total - llenas)
 }
 
 function GraficaOpciones({ pregunta }: { pregunta: PreguntaResultado }) {
-  const filas = filasDeOpciones(pregunta.opciones)
-  const base = pregunta.totalRespuestas
-
-  if (filas.length === 0) {
+  if (pregunta.distribucion.length === 0) {
     return <p className="text-sm opacity-70">Esta pregunta no tiene opciones.</p>
   }
 
-  switch (pregunta.tipo.trim().toLowerCase()) {
+  switch (pregunta.tipoRespuesta.trim().toLowerCase()) {
     case 'caritas':
-      return <DistribucionCaritas filas={filas} base={base} />
+      return <DistribucionCaritas distribucion={pregunta.distribucion} />
     case 'estrellas':
-      return <PromedioEstrellas filas={filas} base={base} />
+      return (
+        <PromedioEstrellas
+          distribucion={pregunta.distribucion}
+          promedio={pregunta.promedio}
+          respuestas={pregunta.respuestas}
+        />
+      )
     default:
-      return <GraficaBarras filas={filas} base={base} />
+      return <GraficaBarras distribucion={pregunta.distribucion} />
   }
 }
 
