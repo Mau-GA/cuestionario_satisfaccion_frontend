@@ -54,6 +54,8 @@ export interface CreateEncuestaDto {
   fechaFinVigencia?: string | null
   /** Evento que agrupa la encuesta. Null o ausente la deja suelta. */
   idEvento?: number | null
+  /** Si aparece en la pantalla de inicio publica al publicarse. */
+  visibleEnInicio?: boolean
 }
 
 export interface UpdateEncuestaDto {
@@ -65,6 +67,7 @@ export interface UpdateEncuestaDto {
   /** Null saca la encuesta del evento y la deja suelta. */
   idEvento?: number | null
   activo?: boolean
+  visibleEnInicio?: boolean
 }
 
 export function esActivo(valor: boolean | number): boolean {
@@ -152,12 +155,15 @@ export function duplicarEncuesta(idEncuesta: number): Promise<Encuesta> {
   })
 }
 
+// FE-50: sin visibleEnInicio el backend conserva el valor que ya trae la
+// encuesta, que es el que se fijo en el formulario. Solo se manda cuando
+// alguien quiere cambiarlo justo al publicar.
 export function publicarEncuesta(
   idEncuesta: number,
-  visibleEnInicio: boolean,
+  visibleEnInicio?: boolean,
 ): Promise<Encuesta> {
   return http.request<Encuesta>(`/encuestas/${idEncuesta}/publicar`, {
     method: 'POST',
-    body: { visibleEnInicio },
+    body: visibleEnInicio === undefined ? {} : { visibleEnInicio },
   })
 }

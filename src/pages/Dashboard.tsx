@@ -152,17 +152,24 @@ function Dashboard() {
   }, [encuestas])
 
   async function handlePublicar(encuesta: Encuesta): Promise<void> {
-    if (!window.confirm(`¿Publicar «${encuesta.titulo}»? Se generará su enlace público.`)) {
+    // FE-50: donde aparece la encuesta ya se decidio en el formulario, con la
+    // casilla «Mostrar en la vista de inicio». Aqui solo se recuerda, en vez
+    // de volver a preguntarlo con un segundo confirm que pisaba lo elegido.
+    const destino = esActivo(encuesta.visibleEnInicio)
+      ? 'y aparecerá en la pantalla de inicio pública'
+      : 'y solo se llegará a ella por ese enlace'
+    if (
+      !window.confirm(
+        `¿Publicar «${encuesta.titulo}»? Se generará su enlace público ${destino}.`,
+      )
+    ) {
       return
     }
-    const visibleEnInicio = window.confirm(
-      '¿Mostrarla también en la pantalla de inicio pública? Aceptar para sí, cancelar para que quede solo con enlace directo.',
-    )
 
     setProcesando(encuesta.idEncuesta)
     setError(null)
     try {
-      await publicarEncuesta(encuesta.idEncuesta, visibleEnInicio)
+      await publicarEncuesta(encuesta.idEncuesta)
       setLoading(true)
       cargar()
     } catch (err) {

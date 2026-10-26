@@ -45,7 +45,8 @@ function deInputDatetime(valor: string): string | null {
   return fecha.toISOString()
 }
 
-function estaActivo(valor: boolean | number | undefined): boolean {
+// El backend manda los booleanos como tinyint: 1 y 0, no true y false.
+function esVerdadero(valor: boolean | number | undefined): boolean {
   return valor === true || valor === 1
 }
 
@@ -77,8 +78,10 @@ function EncuestaFormModal({
   const [fin, setFin] = useState(
     aInputDatetime(encuesta?.fechaFinVigencia ?? null),
   )
+  // FE-50: la casilla es la visibilidad en la portada, no la baja logica.
+  // Una encuesta nueva nace oculta: se muestra solo si alguien lo pide.
   const [mostrar, setMostrar] = useState(
-    encuesta ? estaActivo(encuesta.activo) : true,
+    encuesta ? esVerdadero(encuesta.visibleEnInicio) : false,
   )
   const [idUnidad, setIdUnidad] = useState(
     encuesta?.unidadResponsable
@@ -235,20 +238,18 @@ function EncuestaFormModal({
           fechaInicioVigencia: inicioISO,
           fechaFinVigencia: finISO,
           idEvento,
-          activo: mostrar,
+          visibleEnInicio: mostrar,
         })
       } else {
-        const creada = await crearEncuesta({
+        await crearEncuesta({
           titulo: tituloLimpio,
           idTipoEncuesta: Number(idTipo),
           idUnidadResponsable: unidad,
           fechaInicioVigencia: inicioISO,
           fechaFinVigencia: finISO,
           idEvento,
+          visibleEnInicio: mostrar,
         })
-        if (!mostrar) {
-          await actualizarEncuesta(creada.idEncuesta, { activo: false })
-        }
       }
       onSaved()
     } catch (err) {
@@ -406,8 +407,8 @@ function EncuestaFormModal({
             <span className="flex flex-col gap-0.5">
               <span>Mostrar en la vista de inicio</span>
               <span className="text-xs font-normal opacity-70">
-                Si la desmarcas, la encuesta no aparecerá en el portal y quedará
-                cerrada.
+                Si la desmarcas, al publicarla solo se llegará a ella por su
+                enlace directo. No se da de baja ni se cierra.
               </span>
             </span>
           </label>
