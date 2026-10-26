@@ -72,7 +72,8 @@ function SolicitudAcceso() {
             <div className="p-4 rounded-lg bg-oro-unam/15 border border-oro-unam mb-6">
               <p className="m-0 text-sm text-azul-unam dark:text-oro-unam">
                 <strong>Queda en revisión.</strong> El administrador evaluará tu solicitud y, si es aprobada,
-                recibirás un correo con las credenciales de acceso.
+                recibirás un correo de aviso. El acceso es con tu cuenta institucional de Google: no se
+                envía ninguna contraseña.
               </p>
             </div>
 
@@ -103,6 +104,9 @@ function SolicitudAcceso() {
           <form className="flex flex-col gap-[18px]" onSubmit={handleSubmit}>
             <label className="flex flex-col gap-[6px] text-sm font-semibold">
               <span>Correo electrónico</span>
+              <span className="font-normal text-[13px] opacity-70">
+                Se requiere un correo con dominio institucional
+              </span>
               <input
                 type="email"
                 value={email}
