@@ -59,14 +59,20 @@ function RespuestaBarra({
           sinRespuesta ? 'opacity-40' : ''
         }`}
       />
+      {/* FE-47: los tres span llevan min-w-0 porque en un flex el minimo por
+          defecto es el ancho de la palabra mas larga, y una etiqueta larga
+          empujaba la fila mas alla de la pantalla. Igual que en
+          RespuestaCaritas. */}
       <div aria-hidden className="flex justify-between gap-2 text-xs">
-        <span>{ordenadas[0].etiqueta}</span>
-        <span className="font-bold text-azul-unam dark:text-oro-unam">
+        <span className="min-w-0 [overflow-wrap:anywhere]">
+          {ordenadas[0].etiqueta}
+        </span>
+        <span className="min-w-0 text-center font-bold text-azul-unam [overflow-wrap:anywhere] dark:text-oro-unam">
           {sinRespuesta
             ? 'Toca la barra para responder'
             : ordenadas[indice].etiqueta}
         </span>
-        <span className="text-right">
+        <span className="min-w-0 text-right [overflow-wrap:anywhere]">
           {ordenadas[ordenadas.length - 1].etiqueta}
         </span>
       </div>
