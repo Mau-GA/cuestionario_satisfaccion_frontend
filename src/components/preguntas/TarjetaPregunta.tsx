@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import SelectorCatalogo from './SelectorCatalogo'
-import type { ItemCatalogo, SeleccionCatalogo } from './catalogo'
+import { normalizarTexto, type ItemCatalogo, type SeleccionCatalogo } from './catalogo'
 import { esTipoAbierto, glifoDeTipo } from './tipos'
 import type { PreguntaEncuesta } from '../../services/armado'
 import type { Opcion, TipoRespuesta } from '../../types/catalogos'
@@ -27,6 +27,12 @@ interface Props {
     peso: number | null,
   ) => void
   onQuitarOpcion: (item: PreguntaEncuesta, idOpcion: number) => void
+  onEditarOpcion: (
+    item: PreguntaEncuesta,
+    opcion: Opcion,
+    texto: string,
+    peso: number | null,
+  ) => Promise<boolean>
   onDragStart: (indice: number, event: React.DragEvent) => void
   onDragEnter: (indice: number) => void
   onDragEnd: () => void
@@ -53,6 +59,7 @@ function TarjetaPregunta({
   onQuitar,
   onAgregarOpcion,
   onQuitarOpcion,
+  onEditarOpcion,
   onDragStart,
   onDragEnter,
   onDragEnd,
@@ -202,12 +209,25 @@ function TarjetaPregunta({
                   key={opcion.idOpcion}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-outline bg-surface-alt text-sm text-ink"
                 >
-                  <span className="flex-1 [overflow-wrap:anywhere]">
-                    {opcion.opcion}
-                  </span>
-                  <span className="shrink-0 text-xs opacity-70">
-                    peso {opcion.peso ?? '—'}
-                  </span>
+                  {editable ? (
+                    <EditorOpcion
+                      opcion={opcion}
+                      indicePregunta={indice}
+                      ocupada={ocupada}
+                      onGuardar={(texto, peso) =>
+                        onEditarOpcion(item, opcion, texto, peso)
+                      }
+                    />
+                  ) : (
+                    <>
+                      <span className="flex-1 [overflow-wrap:anywhere]">
+                        {opcion.opcion}
+                      </span>
+                      <span className="shrink-0 text-xs opacity-70">
+                        peso {opcion.peso ?? '—'}
+                      </span>
+                    </>
+                  )}
                   {editable && (
                     <button
                       type="button"
@@ -240,6 +260,92 @@ function TarjetaPregunta({
         </div>
       )}
     </li>
+  )
+}
+
+const CLASE_CAMPO_OPCION =
+  'font-normal text-sm px-2.5 py-1.5 rounded-md border border-outline bg-surface text-ink box-border ' +
+  'transition-[border-color,box-shadow] duration-200 ' +
+  'focus:outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-bg)] disabled:opacity-60'
+
+interface PropsEditorOpcion {
+  opcion: Opcion
+  indicePregunta: number
+  ocupada: boolean
+  /** Resuelve false si no se guardó, para regresar los campos a lo guardado. */
+  onGuardar: (texto: string, peso: number | null) => Promise<boolean>
+}
+
+/**
+ * Texto y peso de una opción ya agregada. Se guarda al salir del campo o con
+ * Enter; Escape regresa a lo guardado. La fila se monta por idOpcion, así que
+ * al volver del API con el renglón nuevo los campos toman sus valores.
+ */
+function EditorOpcion({
+  opcion,
+  indicePregunta,
+  ocupada,
+  onGuardar,
+}: PropsEditorOpcion) {
+  const textoGuardado = opcion.opcion
+  const pesoGuardado = opcion.peso === null ? '' : String(opcion.peso)
+  const [texto, setTexto] = useState(textoGuardado)
+  const [peso, setPeso] = useState(pesoGuardado)
+
+  function restaurar(): void {
+    setTexto(textoGuardado)
+    setPeso(pesoGuardado)
+  }
+
+  function guardar(): void {
+    const textoLimpio = normalizarTexto(texto)
+    const pesoEscrito = peso.trim()
+    const pesoNumero = pesoEscrito === '' ? null : Number(pesoEscrito)
+    if (!textoLimpio || (pesoNumero !== null && !Number.isFinite(pesoNumero))) {
+      restaurar()
+      return
+    }
+    if (textoLimpio === textoGuardado && pesoNumero === opcion.peso) return
+    void onGuardar(textoLimpio, pesoNumero).then((ok) => {
+      if (!ok) restaurar()
+    })
+  }
+
+  function teclas(event: React.KeyboardEvent<HTMLInputElement>): void {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      event.currentTarget.blur()
+    } else if (event.key === 'Escape') {
+      restaurar()
+    }
+  }
+
+  return (
+    <>
+      <input
+        type="text"
+        value={texto}
+        disabled={ocupada}
+        onChange={(event) => setTexto(event.target.value)}
+        onBlur={guardar}
+        onKeyDown={teclas}
+        aria-label={`Texto de la opción «${textoGuardado}» de la pregunta ${indicePregunta + 1}`}
+        className={`${CLASE_CAMPO_OPCION} flex-1 min-w-0`}
+      />
+      <input
+        type="number"
+        step="0.01"
+        value={peso}
+        disabled={ocupada}
+        onChange={(event) => setPeso(event.target.value)}
+        onBlur={guardar}
+        onKeyDown={teclas}
+        aria-label={`Peso de la opción «${textoGuardado}» de la pregunta ${indicePregunta + 1}`}
+        title="Peso"
+        placeholder="Peso"
+        className={`${CLASE_CAMPO_OPCION} w-[88px] shrink-0`}
+      />
+    </>
   )
 }
 

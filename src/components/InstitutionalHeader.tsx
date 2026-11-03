@@ -92,6 +92,7 @@ function InstitutionalHeader() {
               <NavLink
                 key={item.to}
                 to={item.to}
+                end={item.to === '/'}
                 className={({ isActive }) =>
                   `text-[14px] font-semibold no-underline tracking-[0.2px] py-1 ${
                     isActive

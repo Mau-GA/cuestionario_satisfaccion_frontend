@@ -5,12 +5,18 @@ export interface MenuItem {
   label: string
 }
 
+const INICIO: MenuItem = { to: '/', label: 'Inicio' }
+
 const MENU_ADMIN: MenuItem[] = [
+  INICIO,
   { to: '/dashboard', label: 'Panel de encuestas' },
   { to: '/admin', label: 'Administración' },
 ]
 
-const MENU_SURVEY_ADMIN: MenuItem[] = [{ to: '/dashboard', label: 'Panel de encuestas' }]
+const MENU_SURVEY_ADMIN: MenuItem[] = [
+  INICIO,
+  { to: '/dashboard', label: 'Panel de encuestas' },
+]
 
 export function menuPorRol(rol: Role | null | undefined): MenuItem[] {
   switch (rol) {

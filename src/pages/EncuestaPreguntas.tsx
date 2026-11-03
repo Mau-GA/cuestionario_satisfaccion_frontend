@@ -341,6 +341,50 @@ function EncuestaPreguntas() {
     })
   }
 
+  /**
+   * Una opción del catálogo es un texto con su peso, y editarla en el catálogo
+   * cambiaría todas las encuestas que la usan. Por eso aquí se busca (o se da
+   * de alta) el renglón con el texto y peso nuevos, se agrega a la pregunta y
+   * se quita el anterior: las demás encuestas no se enteran.
+   */
+  function handleEditarOpcion(
+    item: PreguntaEncuesta,
+    opcion: Opcion,
+    texto: string,
+    peso: number | null,
+  ): Promise<boolean> {
+    return conGuardado(async () => {
+      const nueva = await createOpcion({
+        opcion: texto,
+        peso: peso ?? undefined,
+      })
+      setCatalogoOpciones((prev) =>
+        prev.some((o) => o.idOpcion === nueva.idOpcion) ? prev : [...prev, nueva],
+      )
+      if (nueva.idOpcion === opcion.idOpcion) return true
+      const actuales = opcionesPorPregunta[item.idEncuestaPregunta] ?? []
+      if (actuales.some((o) => o.idOpcion === nueva.idOpcion)) {
+        throw new ApiError(
+          `La pregunta ya tiene la opción «${nueva.opcion}» con peso ${nueva.peso ?? '—'}.`,
+          409,
+        )
+      }
+      // Primero se agrega y luego se quita, para que la pregunta nunca se
+      // quede sin opciones a medio camino.
+      await agregarOpcionEncuesta(idEncuesta, item.idEncuestaPregunta, nueva.idOpcion)
+      const lista = await quitarOpcionEncuesta(
+        idEncuesta,
+        item.idEncuestaPregunta,
+        opcion.idOpcion,
+      )
+      setOpcionesPorPregunta((prev) => ({
+        ...prev,
+        [item.idEncuestaPregunta]: lista,
+      }))
+      return true
+    }).then((resultado) => resultado === true)
+  }
+
   async function guardarOrden(lista: PreguntaEncuesta[]): Promise<void> {
     const envio = ++ultimoOrden.current
     const resultado = await conGuardado(() =>
@@ -520,6 +564,7 @@ function EncuestaPreguntas() {
                 onQuitar={handleQuitar}
                 onAgregarOpcion={handleAgregarOpcion}
                 onQuitarOpcion={handleQuitarOpcion}
+                onEditarOpcion={handleEditarOpcion}
                 onDragStart={handleDragStart}
                 onDragEnter={handleDragEnter}
                 onDragEnd={handleDragEnd}
