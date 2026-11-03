@@ -5,7 +5,6 @@ import AppLayout from '../components/AppLayout'
 import EstadoBadge from '../components/EstadoBadge'
 import EncuestaFormModal from '../components/EncuestaFormModal'
 import CodigoQrModal from '../components/CodigoQrModal'
-import ConstructorPreguntasModal from '../components/ConstructorPreguntasModal'
 import VistaPreviaEncuestaModal from '../components/VistaPreviaEncuestaModal'
 import { getSession } from '../services/auth'
 import {
@@ -130,7 +129,6 @@ function DetalleDeEncuesta({ id }: { id: string | undefined }) {
   const [formAbierto, setFormAbierto] = useState(
     Boolean((location.state as { editar?: boolean } | null)?.editar),
   )
-  const [armarAbierto, setArmarAbierto] = useState(false)
   const [previaAbierta, setPreviaAbierta] = useState(false)
   const [qrAbierto, setQrAbierto] = useState<'encuesta' | 'evento' | null>(null)
 
@@ -401,7 +399,9 @@ function DetalleDeEncuesta({ id }: { id: string | undefined }) {
                 if (accion === 'editar') {
                   setFormAbierto(true)
                 } else if (accion === 'armar') {
-                  setArmarAbierto(true)
+                  navigate(
+                    `/dashboard/encuestas/${encuesta.idEncuesta}/preguntas`,
+                  )
                 } else if (accion === 'duplicar') {
                   void handleDuplicar()
                 } else if (accion === 'publicar') {
@@ -462,13 +462,6 @@ function DetalleDeEncuesta({ id }: { id: string | undefined }) {
           enlace={enlaceEvento(encuesta.idEvento)}
           archivo={`qr-evento-${comoNombreDeArchivo(evento?.nombre ?? String(encuesta.idEvento))}`}
           onClose={() => setQrAbierto(null)}
-        />
-      )}
-
-      {armarAbierto && (
-        <ConstructorPreguntasModal
-          encuesta={encuesta}
-          onClose={() => setArmarAbierto(false)}
         />
       )}
 

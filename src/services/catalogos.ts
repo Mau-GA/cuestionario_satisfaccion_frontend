@@ -15,7 +15,11 @@ import type {
   UpdateTipoRespuestaData,
 } from '../types/catalogos'
 
-// Endpoints del BE-19; todos requieren rol administrador.
+// Endpoints del BE-19. El alta de preguntas y opciones la puede hacer tambien
+// el administrador de encuestas, porque el editor de la encuesta deja escribir
+// una que no este en el catalogo; editar y dar de baja siguen siendo del
+// administrador. Un alta que repite un texto ya registrado no duplica: el
+// backend devuelve el renglon que ya existia, con 200 en vez de 201.
 // Editar pregunta/opción puede devolver un id distinto (renglón nuevo): 201.
 
 export function listPreguntas(): Promise<Pregunta[]> {
