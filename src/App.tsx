@@ -16,6 +16,7 @@ import UnidadesPage from './pages/UnidadesPage'
 import SolicitudesPage from './pages/SolicitudesPage'
 import CatalogosPage from './pages/CatalogosPage'
 import Dashboard from './pages/Dashboard'
+import EncuestaDetalle from './pages/EncuestaDetalle'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import NoEncontrado from './pages/NoEncontrado'
@@ -68,6 +69,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/encuestas/:id"
+          element={
+            <ProtectedRoute>
+              <EncuestaDetalle />
             </ProtectedRoute>
           }
         />

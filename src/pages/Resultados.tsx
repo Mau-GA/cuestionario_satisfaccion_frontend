@@ -7,10 +7,10 @@ import ListaComentarios from '../components/resultados/ListaComentarios'
 import { ApiError } from '../types/api'
 import {
   calcularEstado,
+  obtenerEncuesta,
   type Encuesta,
 } from '../services/encuestas'
 import {
-  obtenerEncuesta,
   obtenerResultados,
   type Participacion,
   type PreguntaResultado,
@@ -143,8 +143,11 @@ function Resultados() {
   return (
     <AppLayout>
       <div className="mb-4">
-        <Link to="/dashboard" className="text-sm font-bold no-underline">
-          ← Volver al panel
+        <Link
+          to={idValido ? `/dashboard/encuestas/${idEncuesta}` : '/dashboard'}
+          className="text-sm font-bold no-underline"
+        >
+          {idValido ? '← Volver a la encuesta' : '← Volver al panel'}
         </Link>
       </div>
 

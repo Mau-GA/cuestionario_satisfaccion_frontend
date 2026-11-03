@@ -1,25 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import EstadoBadge from '../components/EstadoBadge'
 import EncuestaFormModal from '../components/EncuestaFormModal'
-import EncuestaDetalleModal from '../components/EncuestaDetalleModal'
-import ConstructorPreguntasModal from '../components/ConstructorPreguntasModal'
-import VistaPreviaEncuestaModal from '../components/VistaPreviaEncuestaModal'
 import { getSession } from '../services/auth'
 import {
-  accionesPorEstado,
   calcularEstado,
-  cerrarEncuesta,
-  duplicarEncuesta,
-  eliminarEncuesta,
   esActivo,
-  publicarEncuesta,
   ESTADOS,
   ESTADO_LABEL,
   listEncuestas,
   listTiposEncuesta,
-  type AccionEncuesta,
   type Encuesta,
   type EstadoEncuesta,
   type TipoEncuesta,
@@ -34,29 +25,6 @@ const CLASE_INPUT =
   'font-normal px-[14px] py-2.5 rounded-lg border border-outline bg-surface text-ink box-border ' +
   'transition-[border-color,box-shadow] duration-200 placeholder:text-outline ' +
   'focus:outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-bg)]'
-
-const LABEL_ACCION: Record<AccionEncuesta, string> = {
-  armar: 'Preguntas',
-  ver: 'Ver',
-  editar: 'Editar',
-  duplicar: 'Duplicar',
-  publicar: 'Publicar',
-  cerrar: 'Cerrar',
-  eliminar: 'Eliminar',
-}
-
-const ESTILO_ACCION: Record<AccionEncuesta, string> = {
-  armar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
-  ver: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
-  editar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
-  duplicar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
-  publicar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
-  cerrar: 'text-azul-unam border-azul-unam hover:bg-accent-soft',
-  eliminar: 'bg-oro-unam text-azul-unam border-oro-unam hover:brightness-110',
-}
-
-type FormEncuesta =
-  { modo: 'crear' } | { modo: 'editar'; encuesta: Encuesta } | null
 
 function formatFecha(iso: string | null): string {
   if (!iso) return '—'
@@ -80,6 +48,11 @@ function getErrorMessage(err: unknown): string {
   return err instanceof ApiError ? err.message : 'Error inesperado'
 }
 
+/**
+ * El dashboard es el índice de las encuestas de la unidad. Cada fila
+ * lleva a la pantalla de la encuesta (`/dashboard/encuestas/:id`), que es donde
+ * viven las acciones que antes se apretaban desde aquí.
+ */
 function Dashboard() {
   const session = getSession()
   const navigate = useNavigate()
@@ -90,13 +63,9 @@ function Dashboard() {
   const [filtroEstado, setFiltroEstado] = useState<EstadoEncuesta | 'todas'>(
     'todas',
   )
-  const [formAbierto, setFormAbierto] = useState<FormEncuesta>(null)
-  const [detalle, setDetalle] = useState<Encuesta | null>(null)
-  const [armarEncuesta, setArmarEncuesta] = useState<Encuesta | null>(null)
-  const [previaEncuesta, setPreviaEncuesta] = useState<Encuesta | null>(null)
+  const [formAbierto, setFormAbierto] = useState(false)
   const [tipos, setTipos] = useState<TipoEncuesta[]>([])
   const [unidades, setUnidades] = useState<UnidadResponsable[]>([])
-  const [procesando, setProcesando] = useState<number | null>(null)
 
   const cargar = useCallback((): void => {
     listEncuestas()
@@ -151,77 +120,6 @@ function Dashboard() {
     return conteo
   }, [encuestas])
 
-  async function handlePublicar(encuesta: Encuesta): Promise<void> {
-    // FE-50: donde aparece la encuesta ya se decidio en el formulario, con la
-    // casilla «Mostrar en la vista de inicio». Aqui solo se recuerda, en vez
-    // de volver a preguntarlo con un segundo confirm que pisaba lo elegido.
-    const destino = esActivo(encuesta.visibleEnInicio)
-      ? 'y aparecerá en la pantalla de inicio pública'
-      : 'y solo se llegará a ella por ese enlace'
-    if (
-      !window.confirm(
-        `¿Publicar «${encuesta.titulo}»? Se generará su enlace público ${destino}.`,
-      )
-    ) {
-      return
-    }
-
-    setProcesando(encuesta.idEncuesta)
-    setError(null)
-    try {
-      await publicarEncuesta(encuesta.idEncuesta)
-      setLoading(true)
-      cargar()
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setProcesando(null)
-    }
-  }
-
-  async function handleDuplicar(encuesta: Encuesta): Promise<void> {
-    setProcesando(encuesta.idEncuesta)
-    setError(null)
-    try {
-      const copia = await duplicarEncuesta(encuesta.idEncuesta)
-      setLoading(true)
-      cargar()
-      setFormAbierto({ modo: 'editar', encuesta: copia })
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setProcesando(null)
-    }
-  }
-
-  async function handleCerrar(
-    encuesta: Encuesta,
-    accion: AccionEncuesta,
-  ): Promise<void> {
-    const verbo = accion === 'eliminar' ? 'Eliminar' : 'Cerrar'
-    const detalle =
-      accion === 'eliminar'
-        ? 'Ya no aparecerá en el listado de activas.'
-        : 'La encuesta dejará de estar disponible.'
-    if (!window.confirm(`¿${verbo} «${encuesta.titulo}»? ${detalle}`)) return
-
-    setProcesando(encuesta.idEncuesta)
-    setError(null)
-    try {
-      if (accion === 'eliminar') {
-        await eliminarEncuesta(encuesta.idEncuesta)
-      } else {
-        await cerrarEncuesta(encuesta.idEncuesta)
-      }
-      setLoading(true)
-      cargar()
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setProcesando(null)
-    }
-  }
-
   return (
     <AppLayout>
       <section className="bg-surface border border-outline rounded-xl shadow-[0_4px_12px_rgba(0,61,121,0.08)] p-7">
@@ -274,7 +172,7 @@ function Dashboard() {
           </button>
           <button
             type="button"
-            onClick={() => setFormAbierto({ modo: 'crear' })}
+            onClick={() => setFormAbierto(true)}
             className="rounded-lg bg-azul-unam text-white font-bold cursor-pointer px-[18px] py-[10px]
               transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[0.98]"
           >
@@ -302,91 +200,44 @@ function Dashboard() {
                   <th className="py-2 pr-4 font-bold">Tipo</th>
                   <th className="py-2 pr-4 font-bold">Unidad</th>
                   <th className="py-2 pr-4 font-bold">Estado</th>
-                  <th className="py-2 pr-4 font-bold">Vigencia</th>
-                  <th className="py-2 font-bold text-right">Acciones</th>
+                  <th className="py-2 font-bold">Vigencia</th>
                 </tr>
               </thead>
               <tbody>
-                {visibles.map((encuesta) => {
-                  const estado = calcularEstado(encuesta)
-                  const acciones = accionesPorEstado(
-                    estado,
-                    Boolean(encuesta.tokenPublico),
-                  )
-                  const bloqueada = procesando === encuesta.idEncuesta
-                  return (
-                    <tr
-                      key={encuesta.idEncuesta}
-                      className="border-b border-outline/60"
-                    >
-                      <td className="py-3 pr-4 font-semibold text-ink">
+                {visibles.map((encuesta) => (
+                  <tr
+                    key={encuesta.idEncuesta}
+                    // La fila entera es el area clicable, pero quien navega de
+                    // verdad es el enlace del titulo: asi el teclado y el menu
+                    // contextual siguen funcionando como con cualquier enlace.
+                    onClick={() =>
+                      navigate(`/dashboard/encuestas/${encuesta.idEncuesta}`)
+                    }
+                    className="border-b border-outline/60 cursor-pointer transition-colors hover:bg-accent-soft"
+                  >
+                    <td className="py-3 pr-4 font-semibold text-ink">
+                      <Link
+                        to={`/dashboard/encuestas/${encuesta.idEncuesta}`}
+                        onClick={(event) => event.stopPropagation()}
+                        className="text-azul-unam no-underline hover:underline"
+                      >
                         {encuesta.titulo}
-                      </td>
-                      <td className="py-3 pr-4">
-                        {encuesta.tipoEncuesta?.tipoEncuesta ?? '—'}
-                      </td>
-                      <td className="py-3 pr-4">
-                        {encuesta.unidadResponsable?.nombre ?? '—'}
-                      </td>
-                      <td className="py-3 pr-4">
-                        <EstadoBadge estado={estado} />
-                      </td>
-                      <td className="py-3 pr-4 whitespace-nowrap">
-                        {formatVigencia(encuesta)}
-                      </td>
-                      <td className="py-3 text-right">
-                        <div className="inline-flex flex-wrap justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setPreviaEncuesta(encuesta)}
-                            className="text-[13px] font-bold rounded-lg border border-azul-unam text-azul-unam bg-transparent cursor-pointer px-3 py-1.5 transition-colors hover:bg-accent-soft"
-                          >
-                            Vista previa
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              navigate(
-                                `/dashboard/encuestas/${encuesta.idEncuesta}/resultados`,
-                              )
-                            }
-                            className="text-[13px] font-bold rounded-lg border border-azul-unam text-azul-unam bg-transparent cursor-pointer px-3 py-1.5 transition-colors hover:bg-accent-soft"
-                          >
-                            Resultados
-                          </button>
-                          {acciones.map((accion) => (
-                            <button
-                              key={accion}
-                              type="button"
-                              disabled={bloqueada}
-                              onClick={() => {
-                                if (accion === 'ver') {
-                                  setDetalle(encuesta)
-                                } else if (accion === 'editar') {
-                                  setFormAbierto({
-                                    modo: 'editar',
-                                    encuesta,
-                                  })
-                                } else if (accion === 'duplicar') {
-                                  void handleDuplicar(encuesta)
-                                } else if (accion === 'publicar') {
-                                  void handlePublicar(encuesta)
-                                } else if (accion === 'armar') {
-                                  setArmarEncuesta(encuesta)
-                                } else {
-                                  void handleCerrar(encuesta, accion)
-                                }
-                              }}
-                              className={`text-[13px] font-bold rounded-lg border bg-transparent cursor-pointer px-3 py-1.5 transition-colors disabled:opacity-50 ${ESTILO_ACCION[accion]}`}
-                            >
-                              {LABEL_ACCION[accion]}
-                            </button>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
+                      </Link>
+                    </td>
+                    <td className="py-3 pr-4">
+                      {encuesta.tipoEncuesta?.tipoEncuesta ?? '—'}
+                    </td>
+                    <td className="py-3 pr-4">
+                      {encuesta.unidadResponsable?.nombre ?? '—'}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <EstadoBadge estado={calcularEstado(encuesta)} />
+                    </td>
+                    <td className="py-3 whitespace-nowrap">
+                      {formatVigencia(encuesta)}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -399,38 +250,17 @@ function Dashboard() {
         ) : null}
       </section>
 
-      {detalle && (
-        <EncuestaDetalleModal
-          encuesta={detalle}
-          onClose={() => setDetalle(null)}
-        />
-      )}
-
-      {armarEncuesta && (
-        <ConstructorPreguntasModal
-          encuesta={armarEncuesta}
-          onClose={() => setArmarEncuesta(null)}
-        />
-      )}
-
-      {previaEncuesta && (
-        <VistaPreviaEncuestaModal
-          encuesta={previaEncuesta}
-          onClose={() => setPreviaEncuesta(null)}
-        />
-      )}
-
       {formAbierto && (
         <EncuestaFormModal
-          modo={formAbierto.modo}
-          encuesta={formAbierto.modo === 'crear' ? null : formAbierto.encuesta}
+          modo="crear"
+          encuesta={null}
           tipos={tipos}
           unidades={unidades}
           rol={session?.user.rol ?? null}
           idUnidadPredeterminada={session?.user.idUnidadResponsable ?? null}
-          onClose={() => setFormAbierto(null)}
+          onClose={() => setFormAbierto(false)}
           onSaved={() => {
-            setFormAbierto(null)
+            setFormAbierto(false)
             setLoading(true)
             cargar()
           }}

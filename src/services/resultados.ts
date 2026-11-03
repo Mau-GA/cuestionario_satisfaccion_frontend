@@ -1,5 +1,4 @@
 import { http } from './http'
-import type { Encuesta } from './encuestas'
 
 /**
  * Las formas de este archivo son las que devuelve el API (BE-33 y BE-34), no
@@ -61,10 +60,6 @@ export interface ComentariosPaginados {
 }
 
 export const COMENTARIOS_POR_PAGINA = 10
-
-export function obtenerEncuesta(idEncuesta: number): Promise<Encuesta> {
-  return http.request<Encuesta>(`/encuestas/${idEncuesta}`)
-}
 
 export function obtenerResultados(
   idEncuesta: number,

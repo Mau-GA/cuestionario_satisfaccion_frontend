@@ -113,6 +113,10 @@ export function listEncuestas(): Promise<Encuesta[]> {
   return http.request<Encuesta[]>('/encuestas')
 }
 
+export function obtenerEncuesta(idEncuesta: number): Promise<Encuesta> {
+  return http.request<Encuesta>(`/encuestas/${idEncuesta}`)
+}
+
 export function listTiposEncuesta(): Promise<TipoEncuesta[]> {
   return http.request<TipoEncuesta[]>('/tipos-encuesta/activos')
 }
