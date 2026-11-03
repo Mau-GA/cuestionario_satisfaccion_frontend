@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import EstadoBadge from '../components/EstadoBadge'
 import EncuestaFormModal from '../components/EncuestaFormModal'
+import CodigoQrModal from '../components/CodigoQrModal'
 import ConstructorPreguntasModal from '../components/ConstructorPreguntasModal'
 import VistaPreviaEncuestaModal from '../components/VistaPreviaEncuestaModal'
 import { getSession } from '../services/auth'
@@ -22,6 +23,7 @@ import {
   type EstadoEncuesta,
   type TipoEncuesta,
 } from '../services/encuestas'
+import { enlaceEncuesta, enlaceEvento } from '../services/enlacesPublicos'
 import { listarEventos, type Evento } from '../services/eventos'
 import {
   listUnidadesActivas,
@@ -81,6 +83,17 @@ function motivoBloqueo(encuesta: Encuesta, estado: EstadoEncuesta): string {
   return 'Esta encuesta ya está cerrada. Se conserva tal como se aplicó para que sus resultados sigan siendo válidos.'
 }
 
+/** Nombre de archivo legible para el PNG del QR. */
+function comoNombreDeArchivo(texto: string): string {
+  const limpio = texto
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return limpio || 'codigo'
+}
+
 function getErrorMessage(err: unknown): string {
   return err instanceof ApiError ? err.message : 'Error inesperado'
 }
@@ -119,6 +132,7 @@ function DetalleDeEncuesta({ id }: { id: string | undefined }) {
   )
   const [armarAbierto, setArmarAbierto] = useState(false)
   const [previaAbierta, setPreviaAbierta] = useState(false)
+  const [qrAbierto, setQrAbierto] = useState<'encuesta' | 'evento' | null>(null)
 
   const [tipos, setTipos] = useState<TipoEncuesta[]>([])
   const [unidades, setUnidades] = useState<UnidadResponsable[]>([])
@@ -282,7 +296,7 @@ function DetalleDeEncuesta({ id }: { id: string | undefined }) {
       ? null
       : (eventos.find((item) => item.idEvento === encuesta.idEvento) ?? null)
   const enlacePublico = encuesta.tokenPublico
-    ? `${window.location.origin}/responder/${encuesta.tokenPublico}`
+    ? enlaceEncuesta(encuesta.tokenPublico)
     : null
 
   const datos: [string, ReactNode][] = [
@@ -352,6 +366,32 @@ function DetalleDeEncuesta({ id }: { id: string | undefined }) {
           >
             Resultados
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              // Sin token no hay a donde apuntar: el enlace nace al publicar.
+              if (!enlacePublico) {
+                setError(
+                  'Esta encuesta todavía no tiene enlace público: publícala y su código QR queda listo.',
+                )
+                return
+              }
+              setError(null)
+              setQrAbierto('encuesta')
+            }}
+            className={CLASE_SECUNDARIA}
+          >
+            Código QR de la encuesta
+          </button>
+          {encuesta.idEvento !== null && (
+            <button
+              type="button"
+              onClick={() => setQrAbierto('evento')}
+              className={CLASE_SECUNDARIA}
+            >
+              Código QR del evento
+            </button>
+          )}
           {acciones.map((accion) => (
             <button
               key={accion}
@@ -404,6 +444,26 @@ function DetalleDeEncuesta({ id }: { id: string | undefined }) {
           ))}
         </dl>
       </section>
+
+      {qrAbierto === 'encuesta' && enlacePublico && (
+        <CodigoQrModal
+          titulo="Código QR de la encuesta"
+          nombre={encuesta.titulo}
+          enlace={enlacePublico}
+          archivo={`qr-${comoNombreDeArchivo(encuesta.titulo)}`}
+          onClose={() => setQrAbierto(null)}
+        />
+      )}
+
+      {qrAbierto === 'evento' && encuesta.idEvento !== null && (
+        <CodigoQrModal
+          titulo="Código QR del evento"
+          nombre={evento?.nombre ?? `Evento ${encuesta.idEvento}`}
+          enlace={enlaceEvento(encuesta.idEvento)}
+          archivo={`qr-evento-${comoNombreDeArchivo(evento?.nombre ?? String(encuesta.idEvento))}`}
+          onClose={() => setQrAbierto(null)}
+        />
+      )}
 
       {armarAbierto && (
         <ConstructorPreguntasModal
