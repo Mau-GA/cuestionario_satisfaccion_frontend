@@ -67,19 +67,24 @@ function TarjetaPregunta({
     : [...tipos, item.tipoRespuesta]
 
   return (
+    // La tarjeta entera recibe el soltado, pero arrastrar solo se inicia desde
+    // su encabezado (FE-44): con el <li> arrastrable, seleccionar texto con el
+    // raton dentro de un campo arrancaba un arrastre en vez de seleccionar.
     <li
-      draggable={editable && !ocupada}
-      onDragStart={(event) => onDragStart(indice, event)}
       onDragEnter={() => onDragEnter(indice)}
       onDragOver={(event) => {
         if (arrastrando) event.preventDefault()
       }}
-      onDragEnd={onDragEnd}
       className={`rounded-xl border bg-surface p-4 sm:p-5 transition-[opacity,border-color] ${
         arrastrando ? 'opacity-60 border-azul-unam' : 'border-outline'
       }`}
     >
-      <div className="flex items-center gap-2">
+      <div
+        draggable={editable && !ocupada}
+        onDragStart={(event) => onDragStart(indice, event)}
+        onDragEnd={onDragEnd}
+        className={`flex items-center gap-2 ${editable ? 'cursor-grab' : ''}`}
+      >
         {editable && (
           <span
             className="select-none text-lg opacity-40 cursor-grab"
