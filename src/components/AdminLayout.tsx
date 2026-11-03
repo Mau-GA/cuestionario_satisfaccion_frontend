@@ -25,7 +25,7 @@ export function AdminOnlyLayout() {
   }
 
   return (
-    <div className="min-h-svh flex flex-col bg-azul-unam">
+    <div className="min-h-svh flex flex-col bg-[#f5f5f7]">
       <InstitutionalHeader />
       <div className="flex-1 flex">
         <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-surface border-r border-outline transform transition-transform duration-300 lg:static lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -79,7 +79,7 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="min-h-svh flex flex-col bg-azul-unam">
+    <div className="min-h-svh flex flex-col bg-[#f5f5f7]">
       <InstitutionalHeader />
       <div className="flex-1 flex">
         <aside className="w-64 bg-surface border-r border-outline hidden lg:block">

@@ -14,6 +14,7 @@ import {
   type Evento,
 } from '../services/eventos'
 import type { UnidadResponsable } from '../services/unidades'
+import BuscadorEvento from './BuscadorEvento'
 import { ROLES, type Role } from '../types/auth'
 import { ApiError } from '../types/api'
 
@@ -364,30 +365,24 @@ function EncuestaFormModal({
             Programada; dentro de la vigencia, Abierta.
           </p>
 
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">
-            <span>
+          <div className="flex flex-col gap-1.5 text-sm font-semibold">
+            <span id="etiqueta-evento">
               Evento{' '}
               <span className="font-normal opacity-70">(opcional)</span>
             </span>
-            <input
-              type="text"
-              value={evento}
-              onChange={(event) => setEvento(event.target.value)}
-              list="eventos-de-la-unidad"
-              maxLength={255}
+            <BuscadorEvento
+              idEtiqueta="etiqueta-evento"
+              valor={evento}
+              onCambiar={setEvento}
+              eventos={eventosDeLaUnidad}
               disabled={unidadActual === null}
               placeholder={
                 unidadActual === null
                   ? 'Elige antes la unidad responsable'
-                  : 'Busca uno de tu unidad o escribe uno nuevo'
+                  : 'Busca por cualquier palabra o escribe uno nuevo'
               }
               className={`${CLASE_INPUT} disabled:opacity-60 disabled:cursor-not-allowed`}
             />
-            <datalist id="eventos-de-la-unidad">
-              {eventosDeLaUnidad.map((item) => (
-                <option key={item.idEvento} value={item.nombre} />
-              ))}
-            </datalist>
             <span className="text-xs font-normal opacity-70">
               {evento.trim() === ''
                 ? 'Sin evento, la encuesta se muestra suelta en la vista de inicio.'
@@ -395,7 +390,7 @@ function EncuestaFormModal({
                   ? `Se agrupará bajo «${eventoExistente.nombre}», que ya existe en tu unidad.`
                   : `Se creará el evento «${evento.trim()}» en tu unidad al guardar.`}
             </span>
-          </label>
+          </div>
 
           <label className="flex items-start gap-2.5 text-sm font-semibold">
             <input

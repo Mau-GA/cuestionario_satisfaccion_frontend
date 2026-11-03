@@ -42,13 +42,35 @@ export function deLaUnidad(
   )
 }
 
+function normalizaNombre(texto: string): string {
+  return texto
+    .trim()
+    .toLocaleLowerCase('es')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+}
+
 /** Compara nombres de evento como los compara una persona: sin acentos ni mayusculas. */
 export function mismoNombre(a: string, b: string): boolean {
-  const normaliza = (texto: string) =>
-    texto
-      .trim()
-      .toLocaleLowerCase('es')
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '')
-  return normaliza(a) === normaliza(b)
+  return normalizaNombre(a) === normalizaNombre(b)
+}
+
+/**
+ * Si el nombre contiene todas las palabras buscadas, en cualquier orden y
+ * posición: «muertos feria» encuentra «Feria de Día de Muertos 2026».
+ */
+export function coincideNombre(nombre: string, busqueda: string): boolean {
+  const nombreNormal = normalizaNombre(nombre)
+  return normalizaNombre(busqueda)
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((palabra) => nombreNormal.includes(palabra))
+}
+
+/** Los eventos dados de alta más recientemente primero. */
+export function porRecientes(eventos: Evento[]): Evento[] {
+  return [...eventos].sort(
+    (a, b) =>
+      new Date(b.fechaCreacion).getTime() - new Date(a.fechaCreacion).getTime(),
+  )
 }

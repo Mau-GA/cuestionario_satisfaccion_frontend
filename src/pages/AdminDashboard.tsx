@@ -24,7 +24,7 @@ export default function AdminDashboard() {
   ]
 
   return (
-    <div className="min-h-svh flex flex-col bg-azul-unam">
+    <div className="min-h-svh flex flex-col bg-[#f5f5f7]">
       <InstitutionalHeader />
       <div className="flex-1 flex">
         <aside className="w-64 bg-surface border-r border-outline hidden lg:block">
