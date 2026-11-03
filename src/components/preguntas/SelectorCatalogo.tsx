@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react'
+import { useId, useState } from 'react'
 import {
   mismoTexto,
   normalizarTexto,
@@ -49,13 +49,16 @@ function SelectorCatalogo({
   // el campo lo adopta. Se ajusta durante el render, que es como React pide
   // derivar estado de una prop, y no con un efecto.
   const [valorVisto, setValorVisto] = useState(valorInicial)
+  // Lo último que se mandó a guardar. Confirmar al salir del campo es cómodo,
+  // pero el valor de fuera tarda en volver del API: sin esta marca, soltar el
+  // foco después de un Enter volvía a mandar el mismo cambio, y el segundo
+  // envío chocaba con el primero («la pregunta ya está agregada»).
+  const [ultimoConfirmado, setUltimoConfirmado] = useState(valorInicial)
   if (valorVisto !== valorInicial) {
     setValorVisto(valorInicial)
     setTexto(valorInicial)
+    setUltimoConfirmado(valorInicial)
   }
-  // Confirmar al salir del campo es cómodo, pero elegir una sugerencia con el
-  // ratón también saca el foco: esta marca evita confirmar dos veces.
-  const confirmando = useRef(false)
 
   const escrito = texto.trim()
   const coincidencias = sugerencias
@@ -67,14 +70,10 @@ function SelectorCatalogo({
   function confirmar(item: ItemCatalogo | null, textoElegido: string): void {
     const limpio = normalizarTexto(textoElegido)
     if (!limpio) return
-    confirmando.current = true
     setAbierto(false)
+    setUltimoConfirmado(limpiarAlConfirmar ? valorInicial : limpio)
     onConfirmar({ item, texto: limpio })
     setTexto(limpiarAlConfirmar ? '' : limpio)
-    // El guard se levanta en el siguiente tick, cuando el blur ya pasó.
-    window.setTimeout(() => {
-      confirmando.current = false
-    }, 0)
   }
 
   function confirmarEscrito(): void {
@@ -111,11 +110,15 @@ function SelectorCatalogo({
         }}
         onBlur={() => {
           setAbierto(false)
-          if (confirmando.current) return
-          if (texto.trim() && !mismoTexto(texto, valorInicial)) {
-            confirmarEscrito()
-          } else if (!texto.trim()) {
+          if (!texto.trim()) {
             setTexto(valorInicial)
+            return
+          }
+          if (
+            !mismoTexto(texto, valorInicial) &&
+            !mismoTexto(texto, ultimoConfirmado)
+          ) {
+            confirmarEscrito()
           }
         }}
       />
